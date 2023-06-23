@@ -3,7 +3,13 @@
  * to do sample project
  *
  *@
+@import model.Todo
+@(vv: model.ViewValueCommon, todos: Seq[Todo])
 
-@(vv: model.ViewValueCommon)
 @common.Default(vv){
+  <ul>
+    @for(todo <- todos) {
+      <li>@todo.title @todo.body</li>
+    }
+  </ul>
 }
