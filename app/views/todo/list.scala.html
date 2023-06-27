@@ -4,12 +4,12 @@
  *
  *@
 @import model.Todo
-@(vv: model.ViewValueCommon, todos: Seq[Todo])
+@(vv: model.ViewValueCommon, todos: Seq[Todo#EmbeddedId])
 
 @common.Default(vv){
   <ul>
     @for(todo <- todos) {
-      <li>@todo.title @todo.body</li>
+      <li>@todo.v.title @todo.v.body</li>
     }
   </ul>
 }

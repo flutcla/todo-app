@@ -18,25 +18,25 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       jsSrc  = Seq("main.js")
     )
 
-    val todos: Seq[Todo] = Seq(
-      Todo(
-        1L,
-        1L,
-        "サンプルのTodo1",
-        "これはサンプルのTodoです",
-        1,
+    val todos: Seq[Todo#EmbeddedId] = Seq(
+      new Todo(
+        id = Some(Todo.Id(1L)),
+        category_id = 1L,
+        title = "サンプルのTodo1",
+        body = "これはサンプルのTodoです",
+        model.Todo.Status(1),
         LocalDateTime.of(2000, 1, 1, 0, 0),
         LocalDateTime.of(2000, 1, 1, 0, 0)
-      ),
-      Todo(
-        2L,
-        2L,
-        "サンプルのTodo2",
-        "これはサンプルのTodo その2です",
-        1,
+      ).toEmbeddedId,
+      new Todo(
+        id = Some(Todo.Id(2L)),
+        category_id = 1L,
+        title = "サンプルのTodo2",
+        body = "これはサンプルのTodo その2です",
+        model.Todo.Status(2),
         LocalDateTime.of(2002, 1, 1, 0, 0),
         LocalDateTime.of(2002, 1, 1, 0, 0)
-      )
+      ).toEmbeddedId,
     )
 
     Ok(views.html.todo.list(vv, todos))
