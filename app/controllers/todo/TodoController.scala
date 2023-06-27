@@ -7,7 +7,7 @@ import play.api.mvc.Request
 import play.api.mvc.AnyContent
 import java.time.LocalDateTime
 import model.ViewValueTodo
-import model.Todo
+import lib.model.Todo
 
 @Singleton
 class TodoController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
@@ -24,7 +24,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
         category_id = 1L,
         title = "サンプルのTodo1",
         body = "これはサンプルのTodoです",
-        model.Todo.Status(1),
+        Todo.Status(1),
         LocalDateTime.of(2000, 1, 1, 0, 0),
         LocalDateTime.of(2000, 1, 1, 0, 0)
       ).toEmbeddedId,
@@ -33,7 +33,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
         category_id = 1L,
         title = "サンプルのTodo2",
         body = "これはサンプルのTodo その2です",
-        model.Todo.Status(2),
+        Todo.Status(2),
         LocalDateTime.of(2002, 1, 1, 0, 0),
         LocalDateTime.of(2002, 1, 1, 0, 0)
       ).toEmbeddedId,
