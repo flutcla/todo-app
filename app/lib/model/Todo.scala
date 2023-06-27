@@ -25,9 +25,9 @@ object Todo {
 
   sealed abstract class Status(val code: Short, val name: String) extends EnumStatus
   object Status extends EnumStatus.Of[Status] {
-    case object TODO     extends Status(code=1, name="TODO")
-    case object PROGRESS extends Status(code=2, name="進行中")
-    case object DONE     extends Status(code=3, name="完了")
+    case object TODO     extends Status(code=0, name="TODO")
+    case object PROGRESS extends Status(code=1, name="進行中")
+    case object DONE     extends Status(code=2, name="完了")
   }
 
   def apply(
