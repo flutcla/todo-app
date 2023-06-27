@@ -9,7 +9,7 @@
 @common.Default(vv){
   <ul>
     @for(todo <- todos) {
-      <li>@todo.v.title @todo.v.body</li>
+      <li>[@todo.v.state.name] @todo.v.title @todo.v.body</li>
     }
   </ul>
 }
