@@ -4,12 +4,20 @@
  *
  *@
 @import lib.model.Todo
-@(vv: model.ViewValueCommon, todos: Seq[Todo#EmbeddedId])
+@import lib.model.Category
+@(
+  vv: model.ViewValueCommon,
+  todo_category_tuples: Seq[Tuple2[Todo#EmbeddedId, Category#EmbeddedId]],
+)
 
 @common.Default(vv){
   <ul>
-    @for(todo <- todos) {
-      <li>[@todo.v.state.name] @todo.v.title @todo.v.body</li>
+    @for(todo_category_tuple <- todo_category_tuples) {
+      @todo_category_tuple match {
+        case (todo, category) => {
+          <li style="background-color: @category.v.color.name;">[@todo.v.state.name] [@category.v.name] @todo.v.title @todo.v.body</li>
+        }
+      }
     }
   </ul>
 }

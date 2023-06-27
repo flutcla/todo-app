@@ -23,8 +23,21 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
 
     for {
       results <- onMySQL.TodoRepository.getAll()
+      categories <- onMySQL.CategoryRepository.getAll()
     } yield (
-      Ok(views.html.todo.list(vv, results))
+      Ok(views.html.todo.list(
+          vv,
+          results.map(res =>
+          (
+            res,
+            categories
+              .filter(_.id == res.v.categoryId)
+              .headOption
+              .get
+          )
+        )
+      ))
+      // Ok(views.html.todo.list(vv, results, categories))
     )
   }}
 }
