@@ -9,12 +9,12 @@ import java.time.LocalDateTime
 import Todo._
 case class Todo(
   id:          Option[Id],
-  category_id: Long,
+  categoryId:  Long,
   title:       String,
   body:        String,
   state:       Status,
-  updatedAt:  LocalDateTime,
-  createdAt:  LocalDateTime
+  updatedAt:   LocalDateTime,
+  createdAt:   LocalDateTime
 ) extends EntityModel[Id]
 
 object Todo {
@@ -31,7 +31,7 @@ object Todo {
   }
 
   def apply(
-    category_id: Long,
+    categoryId:  Long,
     title:       String,
     body:        String,
     state:       Status
@@ -39,12 +39,12 @@ object Todo {
     new Entity.WithNoId(
       new Todo(
         id          = None,
-        category_id = category_id,
+        categoryId  = categoryId,
         title       = title,
         body        = body,
         state       = state,
-        createdAt  = java.time.LocalDateTime.now(),
-        updatedAt  = java.time.LocalDateTime.now()
+        updatedAt   = java.time.LocalDateTime.now(),
+        createdAt   = java.time.LocalDateTime.now()
       )
     )
   }

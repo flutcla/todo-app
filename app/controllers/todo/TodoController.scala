@@ -21,7 +21,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     val todos: Seq[Todo#EmbeddedId] = Seq(
       new Todo(
         id = Some(Todo.Id(1L)),
-        category_id = 1L,
+        categoryId = 1L,
         title = "サンプルのTodo1",
         body = "これはサンプルのTodoです",
         Todo.Status(1),
@@ -30,7 +30,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       ).toEmbeddedId,
       new Todo(
         id = Some(Todo.Id(2L)),
-        category_id = 1L,
+        categoryId = 1L,
         title = "サンプルのTodo2",
         body = "これはサンプルのTodo その2です",
         Todo.Status(2),
