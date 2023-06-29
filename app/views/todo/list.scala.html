@@ -8,14 +8,18 @@
 @(
   vv: model.ViewValueCommon,
   todo_category_tuples: Seq[Tuple2[Todo#EmbeddedId, Category#EmbeddedId]],
-)
+)(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
 @common.Default(vv){
   <ul>
     @for(todo_category_tuple <- todo_category_tuples) {
       @todo_category_tuple match {
         case (todo, category) => {
-          <li style="background-color: @category.v.color.name;">[@todo.v.state.name] [@category.v.name] @todo.v.title @todo.v.body</li>
+          @helper.form(action = controllers.todo.routes.TodoController.delete()) {
+            @helper.CSRF.formField
+            <input type="hidden" value="@todo.id", name="id">
+            <li style="background-color: @category.v.color.name;">[@todo.v.state.name] [@category.v.name] @todo.v.title @todo.v.body <input type="submit" value="削除"></li>
+          }
         }
       }
     }

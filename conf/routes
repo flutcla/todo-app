@@ -15,3 +15,6 @@ GET     /todo/list                  controllers.todo.TodoController.list
 # TODO 追加ページ
 GET     /todo/store                 controllers.todo.TodoController.add
 POST    /todo/store                 controllers.todo.TodoController.store
+
+# TODO 削除機能
+POST    /todo/delete                controllers.todo.TodoController.delete

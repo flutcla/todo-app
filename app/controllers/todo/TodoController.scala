@@ -113,4 +113,27 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       }
     )
   }}
+
+  /**
+  * 対象のデータを削除する
+  */
+  def delete() = Action.async { implicit request: Request[AnyContent] => {
+    request.body.asFormUrlEncoded.get("id").headOption match {
+      case Some(id) =>
+        for {
+          res <- onMySQL.TodoRepository.get(Todo.Id(id.toLong))
+          _ <- onMySQL.TodoRepository.remove(Todo.Id(id.toLong))
+        } yield (
+          res match {
+            case Some(x) => {
+              Redirect(routes.TodoController.list())
+            }
+            case None => NotFound(views.html.error.page404())
+          }
+        )
+      case None => Future{
+        NotFound(views.html.error.page404())
+      }
+    }
+  }}
 }
