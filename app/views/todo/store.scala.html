@@ -6,15 +6,28 @@
 @import controllers.todo.TodoFormData
 @(
   vv: model.ViewValueCommon,
-  form: Form[TodoFormData]
+  form: Form[TodoFormData],
+  categories: Seq[Tuple2[String, String]],
 )(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
 @common.Default(vv){
   @helper.form(action = controllers.todo.routes.TodoController.store()) {
     @helper.CSRF.formField
-    @helper.inputText(form("categoryId"))
-    @helper.inputText(form("title"))
-    @helper.inputText(form("body"))
+    @helper.select(
+      form("categoryId"),
+      categories,
+      '_label -> "カテゴリーID"
+    )
+    @helper.inputText(
+      form("title"),
+      '_label -> "タイトル"
+    )
+    @helper.textarea(
+      form("body"),
+      'cols -> 20,
+      'rows -> 7,
+      '_label -> "本文"
+    )
     <input type="submit" value="登録">
   }
 }

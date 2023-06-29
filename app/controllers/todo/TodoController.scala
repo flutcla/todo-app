@@ -60,13 +60,23 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     )(TodoFormData.apply)(TodoFormData.unapply(_))
   )
 
-  def add() = Action { implicit request: Request[AnyContent] => {
+  def add() = Action.async { implicit request: Request[AnyContent] => {
     val vv = ViewValueTodo(
       title  = "Todo 追加",
       cssSrc = Seq("main.css"),
       jsSrc  = Seq("main.js")
     )
-    Ok(views.html.todo.store(vv, form))
+    for {
+      categories <- onMySQL.CategoryRepository.getAll()
+    } yield (
+      Ok(views.html.todo.store(
+        vv,
+        form,
+        categories.map(cat => (
+          cat.id.toString, cat.v.name
+        ))
+      ))
+    )
   }}
 
   def store() = Action.async { implicit request: Request[AnyContent] => {
@@ -77,7 +87,17 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     )
     form.bindFromRequest().fold(
       (formWithErrors: Form[TodoFormData]) => {
-        Future{BadRequest(views.html.todo.store(vv, formWithErrors))}
+        for {
+          categories <- onMySQL.CategoryRepository.getAll()
+        } yield (
+          BadRequest(views.html.todo.store(
+            vv,
+            formWithErrors,
+            categories.map(cat => (
+              cat.id.toString, cat.v.name
+            ))
+          ))
+        )
       },
       (todoFormData: TodoFormData) => {
         for {
