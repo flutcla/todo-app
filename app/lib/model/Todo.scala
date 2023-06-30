@@ -29,6 +29,7 @@ object Todo {
     case object PROGRESS extends Status(code=1, name="進行中")
     case object DONE     extends Status(code=2, name="完了")
   }
+  val StatusSeq = Seq(Status.TODO, Status.PROGRESS, Status.DONE)
 
   def apply(
     categoryId:  Long,

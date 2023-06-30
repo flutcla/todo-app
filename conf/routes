@@ -18,3 +18,7 @@ POST    /todo/store                 controllers.todo.TodoController.store
 
 # TODO 削除機能
 POST    /todo/delete                controllers.todo.TodoController.delete
+
+# TODO 編集機能
+GET     /todo/$id<[0-9]+>/edit      controllers.todo.TodoController.edit(id: Long)
+POST    /todo/$id<[0-9]+>/update    controllers.todo.TodoController.update(id: Long)

@@ -18,9 +18,16 @@ import lib.model.Todo
 import lib.persistence.onMySQL
 
 case class TodoFormData(
-  categoryId : Int,
+  categoryId : Long,
   title :      String,
   body :       String
+)
+
+case class TodoEditFormData(
+  categoryId : Long,
+  title :      String,
+  body :       String,
+  state:       Short
 )
 
 @Singleton
@@ -54,7 +61,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   // 登録用
   val form = Form(
     mapping(
-      "categoryId" -> number,
+      "categoryId" -> longNumber,
       "title"      -> nonEmptyText(maxLength = 140),
       "body"       -> nonEmptyText()
     )(TodoFormData.apply)(TodoFormData.unapply(_))
@@ -135,5 +142,75 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
         NotFound(views.html.error.page404())
       }
     }
+  }}
+
+  /**
+   * 編集画面
+   */
+  val editForm = Form(
+    mapping(
+      "categoryId" -> longNumber,
+      "title"      -> nonEmptyText(maxLength = 140),
+      "body"       -> nonEmptyText(),
+      "state"      -> shortNumber
+    )(TodoEditFormData.apply)(TodoEditFormData.unapply(_))
+  )
+
+  def edit(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+    for {
+      res <- onMySQL.TodoRepository.get(Todo.Id(id))
+      categories <- onMySQL.CategoryRepository.getAll()
+    } yield (
+      res match {
+        case Some(todo) => Ok(views.html.todo.edit(
+          ViewValueTodo(title  = "Todo 追加", cssSrc = Seq("main.css"), jsSrc  = Seq("main.js")),
+          id,
+          editForm.fill(TodoEditFormData(
+            todo.v.categoryId,
+            todo.v.title,
+            todo.v.body,
+            todo.v.state.code
+          )),
+          categories.map(cat => (cat.id.toString, cat.v.name)),
+          Todo.StatusSeq.map(s => (s.code.toString, s.name))
+        ))
+        case None => NotFound(views.html.error.page404())
+      }
+    )
+  }}
+
+  def update(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+    editForm.bindFromRequest().fold(
+      (formWithErrors: Form[TodoEditFormData]) => {
+        for {
+          categories <- onMySQL.CategoryRepository.getAll()
+        } yield (
+          BadRequest(views.html.todo.edit(
+            ViewValueTodo(title  = "Todo 追加", cssSrc = Seq("main.css"), jsSrc  = Seq("main.js")),
+            id,
+            formWithErrors,
+            categories.map(cat => (cat.id.toString, cat.v.name)),
+            Todo.StatusSeq.map(s => (s.code.toString, s.name))
+          ))
+        )
+      },
+      (editFormData: TodoEditFormData) => {
+        for {
+          old <- onMySQL.TodoRepository.get(Todo.Id(id))
+          res <- onMySQL.TodoRepository.update(old.get.map(_.copy(
+            categoryId = editFormData.categoryId,
+            title      = editFormData.title,
+            body       = editFormData.body,
+            state      = Todo.Status(editFormData.state),
+            updatedAt  = java.time.LocalDateTime.now()
+          )))
+        } yield (
+          res match {
+            case Some(_) => Redirect(routes.TodoController.list())
+            case None => NotFound(views.html.error.page404())
+          }
+        )
+      }
+    )
   }}
 }
