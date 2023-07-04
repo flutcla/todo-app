@@ -18,11 +18,6 @@ import lib.persistence.default
 @Singleton
 class TodoController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
   def list() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodo(
-      title  = "Todo 一覧",
-      cssSrc = Seq("main.css"),
-      jsSrc  = Seq("main.js")
-    )
     val todoFuture = default.TodoRepository.getAll()
     val categoryFuture = default.CategoryRepository.getAll()
     Await.ready(todoFuture, Duration.Inf)
@@ -40,7 +35,11 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       if (todoCategoryOptSeq.contains(None)) {
         ???  // TODO: Category が見つからなかった際の処理を考える
       } else {
-        Ok(views.html.todo.list(vv, todoCategoryOptSeq.flatten))
+        Ok(views.html.todo.list(ViewValueTodo(
+          title  = "Todo 一覧",
+          cssSrc = Seq("main.css"),
+          jsSrc = Seq("main.js"),
+          todoCategorySeq = todoCategoryOptSeq.flatten)))
       }
     }
   }}
