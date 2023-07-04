@@ -7,6 +7,8 @@ import play.api.mvc.Request
 import play.api.mvc.AnyContent
 import java.time.LocalDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 import model.ViewValueTodo
 import lib.model.Todo
@@ -20,10 +22,13 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       cssSrc = Seq("main.css"),
       jsSrc  = Seq("main.js")
     )
-
+    val todoFuture = onMySQL.TodoRepository.getAll()
+    val categoryFuture = onMySQL.CategoryRepository.getAll()
+    Await.ready(todoFuture, Duration.Inf)
+    Await.ready(categoryFuture, Duration.Inf)
     for {
-      results <- onMySQL.TodoRepository.getAll()
-      categories <- onMySQL.CategoryRepository.getAll()
+      results <- todoFuture
+      categories <- categoryFuture
     } yield (
       Ok(views.html.todo.list(
           vv,
@@ -37,7 +42,6 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
           )
         )
       ))
-      // Ok(views.html.todo.list(vv, results, categories))
     )
   }}
 }
