@@ -53,7 +53,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   }}
 
   // 登録用
-  val form = Form(
+  val form: Form[TodoFormData] = Form(
     mapping(
       "categoryId" -> number,
       "title"      -> nonEmptyText(maxLength = 140),
@@ -62,42 +62,32 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   )
 
   def add() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodoAdd(
-      title  = "Todo 追加",
-      cssSrc = Seq("main.css"),
-      jsSrc  = Seq("main.js")
-    )
     for {
       categories <- default.CategoryRepository.getAll()
     } yield (
-      Ok(views.html.todo.store(
-        vv,
-        form,
-        categories.map(cat => (
-          cat.id.toString, cat.v.name
-        ))
-      ))
+      Ok(views.html.todo.store(ViewValueTodoAdd(
+        title      = "Todo 追加",
+        cssSrc     = Seq("main.css"),
+        jsSrc      = Seq("main.js"),
+        form       = form,
+        categories = categories.map(cat => (cat.id.toString, cat.v.name))
+      )))
     )
   }}
 
   def store() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodoAdd(
-      title  = "Todo 追加",
-      cssSrc = Seq("main.css"),
-      jsSrc  = Seq("main.js")
-    )
     form.bindFromRequest().fold(
       (formWithErrors: Form[TodoFormData]) => {
         for {
           categories <- default.CategoryRepository.getAll()
         } yield (
-          BadRequest(views.html.todo.store(
-            vv,
-            formWithErrors,
-            categories.map(cat => (
-              cat.id.toString, cat.v.name
-            ))
-          ))
+          BadRequest(views.html.todo.store(ViewValueTodoAdd(
+            title      = "Todo 追加",
+            cssSrc     = Seq("main.css"),
+            jsSrc      = Seq("main.js"),
+            form       = form,
+            categories = categories.map(cat => (cat.id.toString, cat.v.name))
+          )))
         )
       },
       (todoFormData: TodoFormData) => {
