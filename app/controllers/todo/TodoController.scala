@@ -20,8 +20,6 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   def list() = Action.async { implicit request: Request[AnyContent] => {
     val todoFuture = default.TodoRepository.getAll()
     val categoryFuture = default.CategoryRepository.getAll()
-    Await.ready(todoFuture, Duration.Inf)
-    Await.ready(categoryFuture, Duration.Inf)
     for {
       todos <- todoFuture
       categories <- categoryFuture
