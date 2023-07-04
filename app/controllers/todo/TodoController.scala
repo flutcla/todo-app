@@ -121,8 +121,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     request.body.asFormUrlEncoded.get("id").headOption match {
       case Some(id) =>
         for {
-          res <- onMySQL.TodoRepository.get(Todo.Id(id.toLong))
-          _ <- onMySQL.TodoRepository.remove(Todo.Id(id.toLong))
+          res <- onMySQL.TodoRepository.remove(Todo.Id(id.toLong))
         } yield (
           res match {
             case Some(x) => {
