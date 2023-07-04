@@ -12,7 +12,7 @@ import scala.concurrent.duration.Duration
 
 import model.ViewValueTodo
 import lib.model.Todo
-import lib.persistence.onMySQL
+import lib.persistence.default
 
 @Singleton
 class TodoController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
@@ -22,8 +22,8 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       cssSrc = Seq("main.css"),
       jsSrc  = Seq("main.js")
     )
-    val todoFuture = onMySQL.TodoRepository.getAll()
-    val categoryFuture = onMySQL.CategoryRepository.getAll()
+    val todoFuture = default.TodoRepository.getAll()
+    val categoryFuture = default.CategoryRepository.getAll()
     Await.ready(todoFuture, Duration.Inf)
     Await.ready(categoryFuture, Duration.Inf)
     for {
