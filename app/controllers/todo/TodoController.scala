@@ -25,11 +25,10 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       categories <- categoryFuture
     } yield {
       val todoCategoryOptSeq: Seq[Option[Tuple2[Todo#EmbeddedId, Category#EmbeddedId]]] = todos.map(res =>
-        categories.filter(_.id == res.v.categoryId).headOption match {
-          case Some(cat) => Some(res, cat)
-          case None      => None
-        }
-      )
+          categories.collectFirst{
+            case cat if cat.id == res.v.categoryId => (res, cat)
+          }
+        )
       if (todoCategoryOptSeq.contains(None)) {
         ???  // TODO: Category が見つからなかった際の処理を考える
       } else {
