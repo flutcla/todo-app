@@ -1,0 +1,20 @@
+@*
+ *
+ * to do sample project
+ *
+ *@
+@(
+  vv: model.ViewValueTodo
+)
+
+@common.Default(vv){
+  <ul>
+    @for(todo_category_tuple <- vv.todoCategorySeq) {
+      @todo_category_tuple match {
+        case (todo, category) => {
+          <li style="background-color: @category.v.color.name;">[@todo.v.state.name] [@category.v.name] @todo.v.title @todo.v.body</li>
+        }
+      }
+    }
+  </ul>
+}
