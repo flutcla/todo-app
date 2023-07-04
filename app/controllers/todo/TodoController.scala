@@ -12,10 +12,13 @@ import play.api.i18n.I18nSupport
 import java.time.LocalDateTime
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration.Duration
 
-import model.ViewValueTodo
+import model.{ViewValueTodo, ViewValueTodoAdd}
 import lib.model.Todo
-import lib.persistence.onMySQL
+import lib.model.Category
+import lib.persistence.default
 
 case class TodoFormData(
   categoryId : Int,
@@ -26,29 +29,27 @@ case class TodoFormData(
 @Singleton
 class TodoController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with I18nSupport {
   def list() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodo(
-      title  = "Todo 一覧",
-      cssSrc = Seq("main.css"),
-      jsSrc  = Seq("main.js")
-    )
-
+    val todoFuture = default.TodoRepository.getAll()
+    val categoryFuture = default.CategoryRepository.getAll()
     for {
-      results <- onMySQL.TodoRepository.getAll()
-      categories <- onMySQL.CategoryRepository.getAll()
-    } yield (
-      Ok(views.html.todo.list(
-          vv,
-          results.map(res =>
-          (
-            res,
-            categories
-              .filter(_.id == res.v.categoryId)
-              .headOption
-              .get
-          )
+      todos <- todoFuture
+      categories <- categoryFuture
+    } yield {
+      val todoCategoryOptSeq: Seq[Option[Tuple2[Todo#EmbeddedId, Category#EmbeddedId]]] = todos.map(res =>
+          categories.collectFirst{
+            case cat if cat.id == res.v.categoryId => (res, cat)
+          }
         )
-      ))
-    )
+      if (todoCategoryOptSeq.contains(None)) {
+        ???  // TODO: Category が見つからなかった際の処理を考える
+      } else {
+        Ok(views.html.todo.list(ViewValueTodo(
+          title  = "Todo 一覧",
+          cssSrc = Seq("main.css"),
+          jsSrc = Seq("main.js"),
+          todoCategorySeq = todoCategoryOptSeq.flatten)))
+      }
+    }
   }}
 
   // 登録用
@@ -61,13 +62,13 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   )
 
   def add() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodo(
+    val vv = ViewValueTodoAdd(
       title  = "Todo 追加",
       cssSrc = Seq("main.css"),
       jsSrc  = Seq("main.js")
     )
     for {
-      categories <- onMySQL.CategoryRepository.getAll()
+      categories <- default.CategoryRepository.getAll()
     } yield (
       Ok(views.html.todo.store(
         vv,
@@ -80,7 +81,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   }}
 
   def store() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodo(
+    val vv = ViewValueTodoAdd(
       title  = "Todo 追加",
       cssSrc = Seq("main.css"),
       jsSrc  = Seq("main.js")
@@ -88,7 +89,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     form.bindFromRequest().fold(
       (formWithErrors: Form[TodoFormData]) => {
         for {
-          categories <- onMySQL.CategoryRepository.getAll()
+          categories <- default.CategoryRepository.getAll()
         } yield (
           BadRequest(views.html.todo.store(
             vv,
@@ -101,8 +102,8 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       },
       (todoFormData: TodoFormData) => {
         for {
-          result <- onMySQL.TodoRepository.add(Todo.apply(
-            categoryId = todoFormData.categoryId,
+          result <- default.TodoRepository.add(Todo.apply(
+            categoryId = Category.Id(todoFormData.categoryId),
             title      = todoFormData.title,
             body       = todoFormData.body,
             state      = Todo.Status.TODO
