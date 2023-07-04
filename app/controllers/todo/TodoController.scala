@@ -172,7 +172,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
             todo.v.state.code
           )),
           categories.map(cat => (cat.id.toString, cat.v.name)),
-          Todo.StatusSeq.map(s => (s.code.toString, s.name))
+          Todo.Status.values.map(s => (s.code.toString, s.name))
         ))
         case None => NotFound(views.html.error.page404())
       }
@@ -190,7 +190,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
             id,
             formWithErrors,
             categories.map(cat => (cat.id.toString, cat.v.name)),
-            Todo.StatusSeq.map(s => (s.code.toString, s.name))
+            Todo.Status.values.map(s => (s.code.toString, s.name))
           ))
         )
       },
