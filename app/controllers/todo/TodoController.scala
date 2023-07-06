@@ -78,7 +78,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
         cssSrc     = Seq("main.css"),
         jsSrc      = Seq("main.js"),
         form       = form,
-        categories = categories.map(cat => (cat.id.toString, cat.v.name))
+        categories = categories
       )))
     )
   }}
@@ -94,7 +94,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
             cssSrc     = Seq("main.css"),
             jsSrc      = Seq("main.js"),
             form       = form,
-            categories = categories.map(cat => (cat.id.toString, cat.v.name))
+            categories = categories
           )))
         )
       },

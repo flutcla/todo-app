@@ -22,5 +22,7 @@ case class ViewValueTodoAdd(
   cssSrc:          Seq[String],
   jsSrc:           Seq[String],
   form:            Form[TodoFormData],
-  categories:      Seq[Tuple2[String, String]]
-) extends ViewValueCommon
+  categories:      Seq[Category#EmbeddedId]
+) extends ViewValueCommon {
+  lazy val categoriesIdNameTuple = categories.map{cat => (cat.id.toString, cat.v.name)}
+}
