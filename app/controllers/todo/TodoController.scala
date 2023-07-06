@@ -8,6 +8,8 @@ import play.api.mvc.AnyContent
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.I18nSupport
+import play.api.data.FormError
+import play.api.data.format.{ Formats, Formatter }
 
 import java.time.LocalDateTime
 import scala.concurrent.Future
@@ -21,7 +23,7 @@ import lib.model.Category
 import lib.persistence.default
 
 case class TodoFormData(
-  categoryId : Int,
+  categoryId : Category.Id,
   title :      String,
   body :       String
 )
@@ -53,9 +55,15 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   }}
 
   // 登録用
+  implicit val categoryIdFormatter = new Formatter[Category.Id] {
+    def bind(key: String, data: Map[String, String]): Either[Seq[FormError], Category.Id] =
+      Formats.intFormat.bind(key, data).right.map(Category.Id(_))
+    def unbind(key: String, value: Category.Id): Map[String, String] =
+      Map(key -> value.toString)
+  }
   val form: Form[TodoFormData] = Form(
     mapping(
-      "categoryId" -> number,
+      "categoryId" -> of[Category.Id],
       "title"      -> nonEmptyText(maxLength = 140),
       "body"       -> nonEmptyText()
     )(TodoFormData.apply)(TodoFormData.unapply(_))
