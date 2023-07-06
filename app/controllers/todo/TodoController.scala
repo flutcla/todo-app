@@ -43,7 +43,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
           }
         )
       if (todoCategoryOptSeq.contains(None)) {
-        ???  // TODO: Category が見つからなかった際の処理を考える
+        NotFound(views.html.error.page404())
       } else {
         Ok(views.html.todo.list(ViewValueTodo(
           title  = "Todo 一覧",
