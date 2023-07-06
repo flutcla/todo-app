@@ -3,16 +3,13 @@
  * to do sample project
  *
  *@
-@import lib.model.Todo
-@import lib.model.Category
 @(
-  vv: model.ViewValueCommon,
-  todo_category_tuples: Seq[Tuple2[Todo#EmbeddedId, Category#EmbeddedId]],
+  vv: model.ViewValueTodo
 )(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
 @common.Default(vv){
   <ul>
-    @for(todo_category_tuple <- todo_category_tuples) {
+    @for(todo_category_tuple <- vv.todoCategorySeq) {
       @todo_category_tuple match {
         case (todo, category) => {
           @helper.form(action = controllers.todo.routes.TodoController.delete()) {
