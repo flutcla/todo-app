@@ -6,33 +6,29 @@
 @import controllers.todo.TodoEditFormData
 @(
   vv        : model.ViewValueTodoEdit,
-  id        : Long,
-  form      : Form[TodoEditFormData],
-  categories: Seq[Tuple2[String, String]],
-  status    : Seq[Tuple2[String, String]],
 )(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
 @common.Default(vv){
-  @helper.form(action = controllers.todo.routes.TodoController.update(id)) {
+  @helper.form(action = controllers.todo.routes.TodoController.update(vv.id)) {
     @helper.CSRF.formField
     @helper.select(
-      form("categoryId"),
-      categories,
+      vv.form("categoryId"),
+      vv.categoriesIdNameTuple,
       '_label -> "カテゴリーID"
     )
     @helper.inputText(
-      form("title"),
+      vv.form("title"),
       '_label -> "タイトル"
     )
     @helper.textarea(
-      form("body"),
+      vv.form("body"),
       'cols -> 20,
       'rows -> 7,
       '_label -> "本文"
     )
     @helper.select(
-      form("state"),
-      status,
+      vv.form("state"),
+      vv.statusCodeNameTuple,
       '_label -> "状態"
     )
     <input type="submit" value="更新">

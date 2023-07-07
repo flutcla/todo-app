@@ -172,16 +172,16 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
             title = "Todo 追加",
             cssSrc = Seq("main.css"),
             jsSrc = Seq("main.js"),
-            ),
-          id,
-          editForm.fill(TodoEditFormData(
-            todo.v.categoryId,
-            todo.v.title,
-            todo.v.body,
-            todo.v.state
-          )),
-          categories.map(cat => (cat.id.toString, cat.v.name)),
-          Todo.Status.values.map(s => (s.code.toString, s.name))
+            id = Todo.Id(id),
+            form = editForm.fill(TodoEditFormData(
+              todo.v.categoryId,
+              todo.v.title,
+              todo.v.body,
+              todo.v.state
+            )),
+            categories = categories,
+            status = Todo.Status.values
+          )
         ))
         case None => NotFound(views.html.error.page404())
       }
@@ -198,11 +198,12 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
             ViewValueTodoEdit(
               title = "Todo 追加",
               cssSrc = Seq("main.css"),
-              jsSrc = Seq("main.js")),
-            id,
-            formWithErrors,
-            categories.map(cat => (cat.id.toString, cat.v.name)),
-            Todo.Status.values.map(s => (s.code.toString, s.name))
+              jsSrc = Seq("main.js"),
+              id = Todo.Id(id),
+              form = formWithErrors,
+              categories = categories,
+              status = Todo.Status.values
+            )
           ))
         )
       },
