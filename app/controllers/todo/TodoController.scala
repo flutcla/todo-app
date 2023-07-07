@@ -43,7 +43,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
           }
         )
       if (todoCategoryOptSeq.contains(None)) {
-        ???  // TODO: Category が見つからなかった際の処理を考える
+        NotFound(views.html.error.page404())
       } else {
         Ok(views.html.todo.list(ViewValueTodo(
           title  = "Todo 一覧",
@@ -111,5 +111,27 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
         )
       }
     )
+  }}
+
+  /**
+  * 対象のデータを削除する
+  */
+  def delete() = Action.async { implicit request: Request[AnyContent] => {
+    request.body.asFormUrlEncoded.get("id").headOption match {
+      case Some(id) =>
+        for {
+          res <- default.TodoRepository.remove(Todo.Id(id.toLong))
+        } yield (
+          res match {
+            case Some(x) => {
+              Redirect(routes.TodoController.list())
+            }
+            case None => NotFound(views.html.error.page404())
+          }
+        )
+      case None => Future{
+        NotFound(views.html.error.page404())
+      }
+    }
   }}
 }
