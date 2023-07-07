@@ -1,0 +1,26 @@
+@*
+*
+* to do sample project
+*
+*@
+@(
+  vv: model.ViewValueCategoryAdd
+)(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
+
+@common.Default(vv){
+  @helper.form(action = controllers.category.routes.CategoryController.store()) {
+    @helper.CSRF.formField
+    @helper.inputText(
+      vv.form("name"),
+      '_label -> "カテゴリ名"
+    )
+    @helper.inputText(
+      vv.form("slug"),
+      '_label -> "Slug"
+    )
+    @helper.input(vv.form("color")){(id, name, value, args) =>
+      <input type="color" name="@name" id="@id" @toHtmlArgs(args)>
+    }
+    <input type="submit" value="登録">
+  }
+}

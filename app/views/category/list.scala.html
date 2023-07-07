@@ -10,7 +10,7 @@
 @common.Default(vv){
   <ul>
     @for(category <- vv.categories) {
-      <li style="background-color: @category.v.color.name;">
+      <li style="background-color: #@category.v.color.getRGB.toHexString;">
         @category.v.name (@category.v.slug)
       </li>
     }

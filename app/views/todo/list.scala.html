@@ -15,7 +15,7 @@
           @helper.form(action = controllers.todo.routes.TodoController.delete()) {
             @helper.CSRF.formField
             <input type="hidden" value="@todo.id", name="id">
-            <li style="background-color: @category.v.color.name;">
+            <li style="background-color: #@category.v.color.getRGB.toHexString.substring(2);">
               [@todo.v.state.name] [@category.v.name] @todo.v.title @todo.v.body
               <a href="@controllers.todo.routes.TodoController.edit(todo.id)"><button type="button">編集</button></a>
               <input type="submit" value="削除">
