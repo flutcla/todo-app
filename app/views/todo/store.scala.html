@@ -1,0 +1,30 @@
+@*
+*
+* to do sample project
+*
+*@
+@(
+  vv: model.ViewValueTodoAdd
+)(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
+
+@common.Default(vv){
+  @helper.form(action = controllers.todo.routes.TodoController.store()) {
+    @helper.CSRF.formField
+    @helper.select(
+      vv.form("categoryId"),
+      vv.categoriesIdNameTuple,
+      '_label -> "カテゴリーID"
+    )
+    @helper.inputText(
+      vv.form("title"),
+      '_label -> "タイトル"
+    )
+    @helper.textarea(
+      vv.form("body"),
+      'cols -> 20,
+      'rows -> 7,
+      '_label -> "本文"
+    )
+    <input type="submit" value="登録">
+  }
+}
