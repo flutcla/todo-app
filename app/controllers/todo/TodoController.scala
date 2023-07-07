@@ -32,7 +32,7 @@ case class TodoEditFormData(
   categoryId : Category.Id,
   title :      String,
   body :       String,
-  state:       Short
+  state:       Todo.Status
 )
 
 @Singleton
@@ -145,12 +145,19 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   /**
    * 編集画面
    */
+  implicit val todoStatusFormatter = new Formatter[Todo.Status] {
+    def bind(key: String, data: Map[String, String]): Either[Seq[FormError], Todo.Status] =
+      Formats.shortFormat.bind(key, data).right.map(Todo.Status(_))
+    def unbind(key: String, value: Todo.Status): Map[String, String] =
+      Map(key -> value.toString)
+  }
+
   val editForm = Form(
     mapping(
       "categoryId" -> of[Category.Id],
       "title"      -> nonEmptyText(maxLength = 140),
       "body"       -> nonEmptyText(),
-      "state"      -> shortNumber
+      "state"      -> of[Todo.Status]
     )(TodoEditFormData.apply)(TodoEditFormData.unapply(_))
   )
 
@@ -171,7 +178,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
             todo.v.categoryId,
             todo.v.title,
             todo.v.body,
-            todo.v.state.code
+            todo.v.state
           )),
           categories.map(cat => (cat.id.toString, cat.v.name)),
           Todo.Status.values.map(s => (s.code.toString, s.name))
@@ -206,7 +213,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
             categoryId = editFormData.categoryId,
             title      = editFormData.title,
             body       = editFormData.body,
-            state      = Todo.Status(editFormData.state),
+            state      = editFormData.state,
             updatedAt  = java.time.LocalDateTime.now()
           )))
         } yield (
