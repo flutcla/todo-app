@@ -8,23 +8,28 @@ import play.api.mvc.AnyContent
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.I18nSupport
+import play.api.data.FormError
+import play.api.data.format.{ Formats, Formatter }
 
 import java.time.LocalDateTime
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration.Duration
 
-import model.ViewValueTodo
+import model.{ViewValueTodo, ViewValueTodoAdd, ViewValueTodoEdit}
 import lib.model.Todo
-import lib.persistence.onMySQL
+import lib.model.Category
+import lib.persistence.default
 
 case class TodoFormData(
-  categoryId : Long,
+  categoryId : Category.Id,
   title :      String,
   body :       String
 )
 
 case class TodoEditFormData(
-  categoryId : Long,
+  categoryId : Category.Id,
   title :      String,
   body :       String,
   state:       Short
@@ -33,83 +38,77 @@ case class TodoEditFormData(
 @Singleton
 class TodoController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with I18nSupport {
   def list() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodo(
-      title  = "Todo 一覧",
-      cssSrc = Seq("main.css"),
-      jsSrc  = Seq("main.js")
-    )
-
+    val todoFuture = default.TodoRepository.getAll()
+    val categoryFuture = default.CategoryRepository.getAll()
     for {
-      results <- onMySQL.TodoRepository.getAll()
-      categories <- onMySQL.CategoryRepository.getAll()
-    } yield (
-      Ok(views.html.todo.list(
-          vv,
-          results.map(res =>
-          (
-            res,
-            categories
-              .filter(_.id == res.v.categoryId)
-              .headOption
-              .get
-          )
+      todos <- todoFuture
+      categories <- categoryFuture
+    } yield {
+      val todoCategoryOptSeq: Seq[Option[Tuple2[Todo#EmbeddedId, Category#EmbeddedId]]] = todos.map(res =>
+          categories.collectFirst{
+            case cat if cat.id == res.v.categoryId => (res, cat)
+          }
         )
-      ))
-    )
+      if (todoCategoryOptSeq.contains(None)) {
+        NotFound(views.html.error.page404())
+      } else {
+        Ok(views.html.todo.list(ViewValueTodo(
+          title  = "Todo 一覧",
+          cssSrc = Seq("main.css"),
+          jsSrc = Seq("main.js"),
+          todoCategorySeq = todoCategoryOptSeq.flatten)))
+      }
+    }
   }}
 
   // 登録用
-  val form = Form(
+  implicit val categoryIdFormatter = new Formatter[Category.Id] {
+    def bind(key: String, data: Map[String, String]): Either[Seq[FormError], Category.Id] =
+      Formats.intFormat.bind(key, data).right.map(Category.Id(_))
+    def unbind(key: String, value: Category.Id): Map[String, String] =
+      Map(key -> value.toString)
+  }
+  val form: Form[TodoFormData] = Form(
     mapping(
-      "categoryId" -> longNumber,
+      "categoryId" -> of[Category.Id],
       "title"      -> nonEmptyText(maxLength = 140),
       "body"       -> nonEmptyText()
     )(TodoFormData.apply)(TodoFormData.unapply(_))
   )
 
   def add() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodo(
-      title  = "Todo 追加",
-      cssSrc = Seq("main.css"),
-      jsSrc  = Seq("main.js")
-    )
     for {
-      categories <- onMySQL.CategoryRepository.getAll()
+      categories <- default.CategoryRepository.getAll()
     } yield (
-      Ok(views.html.todo.store(
-        vv,
-        form,
-        categories.map(cat => (
-          cat.id.toString, cat.v.name
-        ))
-      ))
+      Ok(views.html.todo.store(ViewValueTodoAdd(
+        title      = "Todo 追加",
+        cssSrc     = Seq("main.css"),
+        jsSrc      = Seq("main.js"),
+        form       = form,
+        categories = categories
+      )))
     )
   }}
 
   def store() = Action.async { implicit request: Request[AnyContent] => {
-    val vv = ViewValueTodo(
-      title  = "Todo 追加",
-      cssSrc = Seq("main.css"),
-      jsSrc  = Seq("main.js")
-    )
     form.bindFromRequest().fold(
       (formWithErrors: Form[TodoFormData]) => {
         for {
-          categories <- onMySQL.CategoryRepository.getAll()
+          categories <- default.CategoryRepository.getAll()
         } yield (
-          BadRequest(views.html.todo.store(
-            vv,
-            formWithErrors,
-            categories.map(cat => (
-              cat.id.toString, cat.v.name
-            ))
-          ))
+          BadRequest(views.html.todo.store(ViewValueTodoAdd(
+            title      = "Todo 追加",
+            cssSrc     = Seq("main.css"),
+            jsSrc      = Seq("main.js"),
+            form       = form,
+            categories = categories
+          )))
         )
       },
       (todoFormData: TodoFormData) => {
         for {
-          result <- onMySQL.TodoRepository.add(Todo.apply(
-            categoryId = todoFormData.categoryId,
+          result <- default.TodoRepository.add(Todo.apply(
+            categoryId = Category.Id(todoFormData.categoryId),
             title      = todoFormData.title,
             body       = todoFormData.body,
             state      = Todo.Status.TODO
@@ -128,8 +127,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     request.body.asFormUrlEncoded.get("id").headOption match {
       case Some(id) =>
         for {
-          res <- onMySQL.TodoRepository.get(Todo.Id(id.toLong))
-          _ <- onMySQL.TodoRepository.remove(Todo.Id(id.toLong))
+          res <- default.TodoRepository.remove(Todo.Id(id.toLong))
         } yield (
           res match {
             case Some(x) => {
@@ -149,7 +147,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
    */
   val editForm = Form(
     mapping(
-      "categoryId" -> longNumber,
+      "categoryId" -> of[Category.Id],
       "title"      -> nonEmptyText(maxLength = 140),
       "body"       -> nonEmptyText(),
       "state"      -> shortNumber
@@ -158,12 +156,16 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
 
   def edit(id: Long) = Action.async { implicit request: Request[AnyContent] => {
     for {
-      res <- onMySQL.TodoRepository.get(Todo.Id(id))
-      categories <- onMySQL.CategoryRepository.getAll()
+      res <- default.TodoRepository.get(Todo.Id(id))
+      categories <- default.CategoryRepository.getAll()
     } yield (
       res match {
         case Some(todo) => Ok(views.html.todo.edit(
-          ViewValueTodo(title  = "Todo 追加", cssSrc = Seq("main.css"), jsSrc  = Seq("main.js")),
+          ViewValueTodoEdit(
+            title = "Todo 追加",
+            cssSrc = Seq("main.css"),
+            jsSrc = Seq("main.js"),
+            ),
           id,
           editForm.fill(TodoEditFormData(
             todo.v.categoryId,
@@ -183,10 +185,13 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     editForm.bindFromRequest().fold(
       (formWithErrors: Form[TodoEditFormData]) => {
         for {
-          categories <- onMySQL.CategoryRepository.getAll()
+          categories <- default.CategoryRepository.getAll()
         } yield (
           BadRequest(views.html.todo.edit(
-            ViewValueTodo(title  = "Todo 追加", cssSrc = Seq("main.css"), jsSrc  = Seq("main.js")),
+            ViewValueTodoEdit(
+              title = "Todo 追加",
+              cssSrc = Seq("main.css"),
+              jsSrc = Seq("main.js")),
             id,
             formWithErrors,
             categories.map(cat => (cat.id.toString, cat.v.name)),
@@ -196,8 +201,8 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       },
       (editFormData: TodoEditFormData) => {
         for {
-          old <- onMySQL.TodoRepository.get(Todo.Id(id))
-          res <- onMySQL.TodoRepository.update(old.get.map(_.copy(
+          old <- default.TodoRepository.get(Todo.Id(id))
+          res <- default.TodoRepository.update(old.get.map(_.copy(
             categoryId = editFormData.categoryId,
             title      = editFormData.title,
             body       = editFormData.body,

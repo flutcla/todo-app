@@ -3,27 +3,24 @@
 * to do sample project
 *
 *@
-@import controllers.todo.TodoFormData
 @(
-  vv: model.ViewValueCommon,
-  form: Form[TodoFormData],
-  categories: Seq[Tuple2[String, String]],
+  vv: model.ViewValueTodoAdd
 )(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
 @common.Default(vv){
   @helper.form(action = controllers.todo.routes.TodoController.store()) {
     @helper.CSRF.formField
     @helper.select(
-      form("categoryId"),
-      categories,
+      vv.form("categoryId"),
+      vv.categoriesIdNameTuple,
       '_label -> "カテゴリーID"
     )
     @helper.inputText(
-      form("title"),
+      vv.form("title"),
       '_label -> "タイトル"
     )
     @helper.textarea(
-      form("body"),
+      vv.form("body"),
       'cols -> 20,
       'rows -> 7,
       '_label -> "本文"

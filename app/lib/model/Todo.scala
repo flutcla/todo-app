@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 import Todo._
 case class Todo(
   id:          Option[Id],
-  categoryId:  Long,
+  categoryId:  Category.Id,
   title:       String,
   body:        String,
   state:       Status,
@@ -31,7 +31,7 @@ object Todo {
   }
 
   def apply(
-    categoryId:  Long,
+    categoryId:  Category.Id,
     title:       String,
     body:        String,
     state:       Status
