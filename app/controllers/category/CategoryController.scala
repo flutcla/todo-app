@@ -50,7 +50,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
       }
     }
     def unbind(key: String, value: Color): Map[String, String] = {
-      Map(key -> ("#" ++ value.getRGB.toHexString.substring(2)))
+      Map(key -> ("#" ++ value.getRGB.toHexString))
     }
   }
   val form: Form[CategoryFormData] = Form(
