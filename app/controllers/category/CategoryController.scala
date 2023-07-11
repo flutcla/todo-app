@@ -93,4 +93,23 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
       }
     )
   }}
+
+  def delete() = Action.async { implicit request: Request[AnyContent] => {
+    request.body.asFormUrlEncoded.get("id").headOption match {
+      case Some(id) =>
+        for {
+          res <- default.CategoryRepository.remove(Category.Id(id.toLong))
+        } yield (
+          res match {
+            case Some(x) => {
+              Redirect(routes.CategoryController.list())
+            }
+            case None => NotFound(views.html.error.page404())
+          }
+        )
+      case None => Future.successful{
+        NotFound(views.html.error.page404())
+      }
+    }
+  }}
 }

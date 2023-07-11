@@ -10,9 +10,14 @@
 @common.Default(vv){
   <ul>
     @for(category <- vv.categories) {
-      <li style="background-color: #@category.v.color.getRGB.toHexString;">
-        @category.v.name (@category.v.slug)
-      </li>
+      @helper.form(action = controllers.category.routes.CategoryController.delete()) {
+        @helper.CSRF.formField
+        <input type="hidden" value="@category.id", name="id">
+        <li style="background-color: #@category.v.color.getRGB.toHexString;">
+          @category.v.name (@category.v.slug)
+          <input type="submit" value="削除">
+        </li>
+      }
     }
   </ul>
 }
