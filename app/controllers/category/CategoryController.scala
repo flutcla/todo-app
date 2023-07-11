@@ -102,6 +102,12 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
         } yield (
           res match {
             case Some(x) => {
+              // カテゴリを削除したらそのカテゴリの todo も全て削除する
+              default.TodoRepository
+                .getAll()
+                .map(_.collect{
+                  case todo if todo.v.categoryId == x.id => default.TodoRepository.remove(todo.id)
+                })
               Redirect(routes.CategoryController.list())
             }
             case None => NotFound(views.html.error.page404())
