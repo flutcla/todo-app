@@ -13,7 +13,7 @@
       @helper.form(action = controllers.category.routes.CategoryController.delete()) {
         @helper.CSRF.formField
         <input type="hidden" value="@category.id", name="id">
-        <li style="background-color: #@category.v.color.getRGB.toHexString;">
+        <li style='background-color: #@category.v.color.getRGB.toHexString.padTo(6, "0");'>
           @category.v.name (@category.v.slug)
           <input type="submit" value="削除">
         </li>
