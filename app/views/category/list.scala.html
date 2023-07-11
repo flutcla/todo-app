@@ -15,6 +15,7 @@
         <input type="hidden" value="@category.id", name="id">
         <li style='background-color: #@category.v.color.getRGB.toHexString.padTo(6, "0");'>
           @category.v.name (@category.v.slug)
+          <a href="@controllers.category.routes.CategoryController.edit(category.id)"><button type="button">編集</button></a>
           <input type="submit" value="削除">
         </li>
       }
