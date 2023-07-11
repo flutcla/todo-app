@@ -35,7 +35,7 @@ case class CategoryTable[P <: JdbcProfile]()(implicit val driver: P)
 
   // Color型のためのTypedTypeを定義
   implicit val colorColumnType: JdbcType[Color] = MappedColumnType.base[Color, Int](
-    color => color.getRGB,
+    color => Integer.parseInt(color.getRGB.toHexString.substring(2), 16),
     rgb => new Color(rgb, true)
   )
 
