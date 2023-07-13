@@ -208,19 +208,23 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
         )
       },
       (editFormData: TodoEditFormData) => {
-        for {
-          old <- default.TodoRepository.get(Todo.Id(id))
-          res <- default.TodoRepository.update(old.get.map(_.copy(
-            categoryId = editFormData.categoryId,
-            title      = editFormData.title,
-            body       = editFormData.body,
-            state      = editFormData.state,
-            updatedAt  = java.time.LocalDateTime.now()
-          )))
-        } yield (
-          res match {
-            case Some(_) => Redirect(routes.TodoController.list())
-            case None => NotFound(views.html.error.page404())
+        default.TodoRepository.get(Todo.Id(id)).flatMap(old =>
+          old match {
+            case Some(todo) => for {
+              res <- default.TodoRepository.update(todo.map(_.copy(
+                categoryId = editFormData.categoryId,
+                title      = editFormData.title,
+                body       = editFormData.body,
+                state      = editFormData.state,
+                updatedAt  = java.time.LocalDateTime.now()
+              )))
+            } yield (
+              res match {
+                case Some(_) => Redirect(routes.TodoController.list())
+                case None => NotFound(views.html.error.page404())
+              }
+            )
+            case None => Future.successful{NotFound(views.html.error.page404())}
           }
         )
       }
