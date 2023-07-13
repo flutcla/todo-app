@@ -97,22 +97,27 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
   def delete() = Action.async { implicit request: Request[AnyContent] => {
     request.body.asFormUrlEncoded.get("id").headOption match {
       case Some(id) =>
-        for {
-          res <- default.CategoryRepository.remove(Category.Id(id.toLong))
-        } yield (
-          res match {
-            case Some(x) => {
-              // カテゴリを削除したらそのカテゴリの todo も全て削除する
-              default.TodoRepository
-                .getAll()
-                .map(_.collect{
-                  case todo if todo.v.categoryId == x.id => default.TodoRepository.remove(todo.id)
-                })
-              Redirect(routes.CategoryController.list())
+        default.CategoryRepository
+          .remove(Category.Id(id.toLong))
+          .flatMap(res =>
+            res match {
+              case Some(x) => {
+                // カテゴリを削除したらそのカテゴリの todo も全て削除する
+                default.TodoRepository
+                  .getAll()  // todo を全て取得
+                  .map(_.collect{
+                    case todo if todo.v.categoryId == x.id => default.TodoRepository.remove(todo.id)  // categoryId が合致するものを削除
+                  })
+                  .flatMap(seqFuture => Future.sequence(seqFuture)) // Seq[Future[Option[lib.model.Todo#EmbeddedId]]] -> Future[Seq[Option[Todo#EmbeddedId]]]]
+                  .map(seqOption => if(seqOption.contains(None)) {
+                    NotFound(views.html.error.page404())
+                  } else {
+                    Redirect(routes.CategoryController.list())
+                  })
+              }
+              case None => Future.successful{NotFound(views.html.error.page404())}
             }
-            case None => NotFound(views.html.error.page404())
-          }
-        )
+          )
       case None => Future.successful{
         NotFound(views.html.error.page404())
       }
