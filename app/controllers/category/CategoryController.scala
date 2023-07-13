@@ -13,6 +13,7 @@ import play.api.data.format.{ Formats, Formatter }
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Try, Success, Failure}
 import java.awt.Color
 
 import model.{ViewValueCategoryList, ViewValueCategoryAdd}
@@ -46,7 +47,10 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
     def bind(key: String, data: Map[String, String]): Either[Seq[FormError], Color] = {
       data.get(key) match {
         case None => Left(Seq(FormError(key, "required")))
-        case Some(v) => Right(Color.decode(v))
+        case Some(v) => Try(Color.decode(v)) match {
+          case Success(c) => Right(c)
+          case Failure(_) => Left(Seq(FormError(key, "required")))
+        }
       }
     }
     def unbind(key: String, value: Color): Map[String, String] = {
