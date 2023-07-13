@@ -165,18 +165,22 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
         )
       },
       (editFormData: CategoryFormData) => {
-        for {
-          old <- default.CategoryRepository.get(Category.Id(id))
-          res <- default.CategoryRepository.update(old.get.map(_.copy(
-            name       = editFormData.name,
-            slug       = editFormData.slug,
-            color      = editFormData.color,
-            updatedAt  = java.time.LocalDateTime.now()
-          )))
-        } yield (
-          res match {
-            case Some(_) => Redirect(routes.CategoryController.list())
-            case None => NotFound(views.html.error.page404())
+        default.CategoryRepository.get(Category.Id(id)).flatMap(old =>
+          old match {
+            case Some(category) => for {
+              res <- default.CategoryRepository.update(category.map(_.copy(
+                name       = editFormData.name,
+                slug       = editFormData.slug,
+                color      = editFormData.color,
+                updatedAt  = java.time.LocalDateTime.now()
+              )))
+            } yield (
+              res match {
+                case Some(_) => Redirect(routes.CategoryController.list())
+                case None => NotFound(views.html.error.page404())
+              }
+            )
+            case None => Future.successful{NotFound(views.html.error.page404())}
           }
         )
       }
