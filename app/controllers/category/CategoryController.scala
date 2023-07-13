@@ -15,9 +15,8 @@ import lib.persistence.default
 @Singleton
 class CategoryController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with I18nSupport {
   def list() = Action.async {implicit request: Request[AnyContent] => {
-    val categoryFuture = default.CategoryRepository.getAll()
     for {
-      categories <- categoryFuture
+      categories <- default.CategoryRepository.getAll()
     } yield Ok(views.html.category.list(ViewValueCategoryList(
       title  = "Category 一覧",
       cssSrc = Seq("main.css"),
