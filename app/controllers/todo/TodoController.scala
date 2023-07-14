@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Await}
 import scala.concurrent.duration.Duration
 
-import model.{ViewValueTodo, ViewValueTodoAdd}
+import model.{ViewValueTodo, ViewValueTodoAdd, ViewValueTodoEdit}
 import lib.model.Todo
 import lib.model.Category
 import lib.persistence.default
@@ -26,6 +26,13 @@ case class TodoFormData(
   categoryId : Category.Id,
   title :      String,
   body :       String
+)
+
+case class TodoEditFormData(
+  categoryId : Category.Id,
+  title :      String,
+  body :       String,
+  state:       Todo.Status
 )
 
 @Singleton
@@ -133,5 +140,87 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
         NotFound(views.html.error.page404())
       }
     }
+  }}
+
+  /**
+   * 編集画面
+   */
+  val editForm = Form(
+    mapping(
+      "categoryId" -> of[Category.Id],
+      "title"      -> nonEmptyText(maxLength = 140),
+      "body"       -> nonEmptyText(),
+      "state"      -> shortNumber.transform[Todo.Status](Todo.Status(_), _.code)
+    )(TodoEditFormData.apply)(TodoEditFormData.unapply(_))
+  )
+
+  def edit(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+    for {
+      res <- default.TodoRepository.get(Todo.Id(id))
+      categories <- default.CategoryRepository.getAll()
+    } yield (
+      res match {
+        case Some(todo) => Ok(views.html.todo.edit(
+          ViewValueTodoEdit(
+            title = "Todo 追加",
+            cssSrc = Seq("main.css"),
+            jsSrc = Seq("main.js"),
+            id = Todo.Id(id),
+            form = editForm.fill(TodoEditFormData(
+              todo.v.categoryId,
+              todo.v.title,
+              todo.v.body,
+              todo.v.state
+            )),
+            categories = categories,
+            status = Todo.Status.values
+          )
+        ))
+        case None => NotFound(views.html.error.page404())
+      }
+    )
+  }}
+
+  def update(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+    editForm.bindFromRequest().fold(
+      (formWithErrors: Form[TodoEditFormData]) => {
+        for {
+          categories <- default.CategoryRepository.getAll()
+        } yield (
+          BadRequest(views.html.todo.edit(
+            ViewValueTodoEdit(
+              title = "Todo 追加",
+              cssSrc = Seq("main.css"),
+              jsSrc = Seq("main.js"),
+              id = Todo.Id(id),
+              form = formWithErrors,
+              categories = categories,
+              status = Todo.Status.values
+            )
+          ))
+        )
+      },
+      (editFormData: TodoEditFormData) => {
+        default.TodoRepository.get(Todo.Id(id)).flatMap(old =>
+          old match {
+            case Some(todo) => for {
+              res <- default.TodoRepository.update(todo.map(_.copy(
+                categoryId = editFormData.categoryId,
+                title      = editFormData.title,
+                body       = editFormData.body,
+                state      = editFormData.state,
+                updatedAt  = java.time.LocalDateTime.now()
+              )))
+            } yield (
+              res match {
+                case Some(_) => Redirect(routes.TodoController.list())
+                case None => NotFound(views.html.error.page404())
+              }
+            )
+            case None => Future.successful{NotFound(views.html.error.page404())}
+          }
+        )
+      }
+    )
   }}
 }
