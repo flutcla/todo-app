@@ -2,7 +2,7 @@ package lib.persistence
 
 import scala.concurrent.Future
 import ixias.persistence.SlickRepository
-import lib.model.Todo
+import lib.model.{Todo, Category}
 import slick.jdbc.JdbcProfile
 
 // TodoRepository: TodoTable へのクエリ発行を行う　Repository 層
@@ -66,5 +66,17 @@ case class TodoRepository[P <: JdbcProfile]()(implicit val driver: P)
           case Some(_) => row.delete
         }
       } yield old
+    }
+
+  /**
+   * Delete Todo Data By Category Id
+   */
+  def removeByCategoryId(categoryId: Category.Id): Future[Seq[EntityEmbeddedId]] =
+    RunDBAction(TodoTable) { slick =>
+      val row = slick.filter(_.categoryId === categoryId)
+      for {
+        oldSeq <- row.result
+        _ <- row.delete
+      } yield oldSeq
     }
 }
