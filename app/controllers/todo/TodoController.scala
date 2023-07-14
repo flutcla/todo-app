@@ -145,19 +145,12 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   /**
    * 編集画面
    */
-  implicit val todoStatusFormatter = new Formatter[Todo.Status] {
-    def bind(key: String, data: Map[String, String]): Either[Seq[FormError], Todo.Status] =
-      Formats.shortFormat.bind(key, data).right.map(Todo.Status(_))
-    def unbind(key: String, value: Todo.Status): Map[String, String] =
-      Map(key -> value.toString)
-  }
-
   val editForm = Form(
     mapping(
       "categoryId" -> of[Category.Id],
       "title"      -> nonEmptyText(maxLength = 140),
       "body"       -> nonEmptyText(),
-      "state"      -> of[Todo.Status]
+      "state"      -> shortNumber.transform[Todo.Status](Todo.Status(_), _.code)
     )(TodoEditFormData.apply)(TodoEditFormData.unapply(_))
   )
 
