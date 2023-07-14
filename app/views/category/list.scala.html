@@ -1,0 +1,18 @@
+@*
+*
+* to do sample project
+*
+*@
+@(
+  vv: model.ViewValueCategoryList
+)(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
+
+@common.Default(vv){
+  <ul>
+    @for(category <- vv.categories) {
+      <li style="background-color: @category.v.color.name;">
+        @category.v.name (@category.v.slug)
+      </li>
+    }
+  </ul>
+}
