@@ -25,3 +25,7 @@ POST    /todo/$id<[0-9]+>/update    controllers.todo.TodoController.update(id: L
 
 # Category 一覧ページ
 GET     /category/list              controllers.category.CategoryController.list
+
+# Category 追加ページ
+GET     /category/store             controllers.category.CategoryController.add
+POST    /category/store             controllers.category.CategoryController.store

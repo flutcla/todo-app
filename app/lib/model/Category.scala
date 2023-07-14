@@ -4,6 +4,7 @@ import ixias.model._
 import ixias.util.EnumStatus
 
 import java.time.LocalDateTime
+import java.awt.Color
 
 // カテゴリーを表すモデル
 //~~~~~~~~~~~~~~~~~~~~~
@@ -23,13 +24,13 @@ object Category {
   type WithNoId = Entity.WithNoId[Id, Category]
   type EmbeddedId = Entity.EmbeddedId[Id, Category]
 
-  sealed abstract class Color(val code: Short, val name: String) extends EnumStatus
-  object Color extends EnumStatus.Of[Color] {
-    case object RED    extends Color(code=0, name="coral")
-    case object GREEN  extends Color(code=1, name="lightgreen")
-    case object BLUE   extends Color(code=2, name="aliceblue")
-    case object ORANGE extends Color(code=3, name="orange")
-  }
+  // sealed abstract class Color(val code: Short, val name: String) extends EnumStatus
+  // object Color extends EnumStatus.Of[Color] {
+  //   case object RED    extends Color(code=0, name="coral")
+  //   case object GREEN  extends Color(code=1, name="lightgreen")
+  //   case object BLUE   extends Color(code=2, name="aliceblue")
+  //   case object ORANGE extends Color(code=3, name="orange")
+  // }
 
   def apply(
     name:  String,
