@@ -11,6 +11,9 @@ import play.api.data.Forms._
 import play.api.data.FormError
 import play.api.data.format.{ Formats, Formatter }
 
+import cats.data.OptionT
+import cats.implicits._
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.awt.Color
@@ -157,24 +160,20 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
         )
       },
       (editFormData: CategoryFormData) => {
-        default.CategoryRepository.get(Category.Id(id)).flatMap(old =>
-          old match {
-            case Some(category) => for {
-              res <- default.CategoryRepository.update(category.map(_.copy(
-                name       = editFormData.name,
-                slug       = editFormData.slug,
-                color      = editFormData.color,
-                updatedAt  = java.time.LocalDateTime.now()
-              )))
-            } yield (
-              res match {
-                case Some(_) => Redirect(routes.CategoryController.list())
-                case None => NotFound(views.html.error.page404())
-              }
-            )
-            case None => Future.successful{NotFound(views.html.error.page404())}
-          }
-        )
+        val ot: OptionT[Future, Category#EmbeddedId] = for { // OptionT[Future, EntityEmbeddedId]
+          category <- OptionT(default.CategoryRepository.get(Category.Id(id))) // Future[Option[EntityEmbeddedId]]
+          updateResultOpt <- OptionT.liftF(default.CategoryRepository.update(category.map(_.copy(
+              name       = editFormData.name,
+              slug       = editFormData.slug,
+              color      = editFormData.color,
+              updatedAt  = java.time.LocalDateTime.now()
+            ))))
+          updateResult <- OptionT.fromOption[Future](updateResultOpt)
+        } yield updateResult
+        ot.value.map(_ match {
+          case Some(_) => Redirect(routes.CategoryController.list())
+          case None => NotFound(views.html.error.page404())
+        })
       }
     )
   }}
