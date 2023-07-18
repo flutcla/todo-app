@@ -22,6 +22,9 @@ import lib.model.Todo
 import lib.model.Category
 import lib.persistence.default
 
+import json.writes._
+import play.api.libs.json.Json
+
 case class TodoFormData(
   categoryId : Category.Id,
   title :      String,
@@ -52,11 +55,10 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       if (todoCategoryOptSeq.contains(None)) {
         NotFound(views.html.error.page404())
       } else {
-        Ok(views.html.todo.list(ViewValueTodo(
-          title  = "Todo 一覧",
-          cssSrc = Seq("main.css"),
-          jsSrc = Seq("main.js"),
-          todoCategorySeq = todoCategoryOptSeq.flatten)))
+        val jsValue = todoCategoryOptSeq.flatten.map {
+          case (todo, category) => (JsValueTodoWithCategory((todo, category)))
+        }
+        Ok(Json.toJson(jsValue))
       }
     }
   }}
