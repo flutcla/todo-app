@@ -23,6 +23,7 @@ import lib.model.Category
 import lib.persistence.default
 
 import json.writes._
+import json.reads._
 import play.api.libs.json.Json
 
 case class TodoFormData(
@@ -125,24 +126,26 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   /**
   * 対象のデータを削除する
   */
-  def delete() = Action.async { implicit request: Request[AnyContent] => {
-    request.body.asFormUrlEncoded.get("id").headOption match {
-      case Some(id) =>
-        for {
-          res <- default.TodoRepository.remove(Todo.Id(id.toLong))
-        } yield (
-          res match {
-            case Some(x) => {
-              Redirect(routes.TodoController.list())
+  def delete() = Action(parse.json).async { implicit request => {
+    request.body
+      .validate[JsValueTodoDelete]
+      .fold(
+        errors => Future.successful(NotFound("The format is wrong.")),
+        todoDeleteData =>{
+          for {
+            res <- default.TodoRepository.remove(todoDeleteData.id)
+          } yield (
+            res match {
+              case Some(x) => {
+                Ok(s"Successfully deleted ${todoDeleteData.id.toLong}.")
+              }
+              case None => NotFound(s"ID ${todoDeleteData.id.toLong} does not exist.")
             }
-            case None => NotFound(views.html.error.page404())
-          }
-        )
-      case None => Future{
-        NotFound(views.html.error.page404())
-      }
+          )
+        }
+      )
     }
-  }}
+  }
 
   /**
    * 編集画面
