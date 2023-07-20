@@ -130,16 +130,16 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     request.body
       .validate[JsValueTodoDelete]
       .fold(
-        errors => Future.successful(NotFound("The format is wrong.")),
+        errors => Future.successful(NotFound(Json.toJson("message" -> "The format is wrong."))),
         todoDeleteData =>{
           for {
             res <- default.TodoRepository.remove(todoDeleteData.id)
           } yield (
             res match {
               case Some(x) => {
-                Ok(s"Successfully deleted ${todoDeleteData.id.toLong}.")
+                Ok(Json.toJson("message" -> s"Successfully deleted ${todoDeleteData.id.toLong}."))
               }
-              case None => NotFound(s"ID ${todoDeleteData.id.toLong} does not exist.")
+              case None => NotFound(Json.toJson("message" -> s"ID ${todoDeleteData.id.toLong} does not exist."))
             }
           )
         }
