@@ -13,7 +13,6 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 GET     /todo/list                  controllers.todo.TodoController.list
 
 # TODO 追加ページ
-GET     /todo/store                 controllers.todo.TodoController.add
 POST    /todo/store                 controllers.todo.TodoController.store
 
 # TODO 削除機能

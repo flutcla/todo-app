@@ -71,57 +71,25 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     def unbind(key: String, value: Category.Id): Map[String, String] =
       Map(key -> value.toString)
   }
-  val form: Form[TodoFormData] = Form(
-    mapping(
-      "categoryId" -> of[Category.Id],
-      "title"      -> nonEmptyText(maxLength = 140),
-      "body"       -> nonEmptyText()
-    )(TodoFormData.apply)(TodoFormData.unapply(_))
-  )
-
-  def add() = Action.async { implicit request: Request[AnyContent] => {
-    for {
-      categories <- default.CategoryRepository.getAll()
-    } yield (
-      Ok(views.html.todo.store(ViewValueTodoAdd(
-        title      = "Todo 追加",
-        cssSrc     = Seq("main.css"),
-        jsSrc      = Seq("main.js"),
-        form       = form,
-        categories = categories
-      )))
-    )
-  }}
-
-  def store() = Action.async { implicit request: Request[AnyContent] => {
-    form.bindFromRequest().fold(
-      (formWithErrors: Form[TodoFormData]) => {
-        for {
-          categories <- default.CategoryRepository.getAll()
-        } yield (
-          BadRequest(views.html.todo.store(ViewValueTodoAdd(
-            title      = "Todo 追加",
-            cssSrc     = Seq("main.css"),
-            jsSrc      = Seq("main.js"),
-            form       = form,
-            categories = categories
-          )))
-        )
-      },
-      (todoFormData: TodoFormData) => {
+  def store() = Action(parse.json).async { implicit request => {
+    request.body
+      .validate[JsValueTodoStore]
+      .fold(
+        errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
+        todoStoreData =>
         for {
           result <- default.TodoRepository.add(Todo.apply(
-            categoryId = Category.Id(todoFormData.categoryId),
-            title      = todoFormData.title,
-            body       = todoFormData.body,
+            categoryId = Category.Id(todoStoreData.categoryId),
+            title      = todoStoreData.title,
+            body       = todoStoreData.body,
             state      = Todo.Status.TODO
           ))
         } yield (
           Redirect(routes.TodoController.list())
         )
-      }
-    )
-  }}
+      )
+    }
+  }
 
   /**
   * 対象のデータを削除する
