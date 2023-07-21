@@ -160,20 +160,17 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
         )
       },
       (editFormData: CategoryFormData) => {
-        val ot: OptionT[Future, Category#EmbeddedId] = for { // OptionT[Future, EntityEmbeddedId]
+        val ot: OptionT[Future, play.api.mvc.Result] = for {
           category <- OptionT(default.CategoryRepository.get(Category.Id(id))) // Future[Option[EntityEmbeddedId]]
-          updateResultOpt <- OptionT.liftF(default.CategoryRepository.update(category.map(_.copy(
+          updateData = category.map(_.copy(
               name       = editFormData.name,
               slug       = editFormData.slug,
               color      = editFormData.color,
               updatedAt  = java.time.LocalDateTime.now()
-            ))))
-          updateResult <- OptionT.fromOption[Future](updateResultOpt)
-        } yield updateResult
-        ot.value.map(_ match {
-          case Some(_) => Redirect(routes.CategoryController.list())
-          case None => NotFound(views.html.error.page404())
-        })
+            ))
+          _ <- OptionT(default.CategoryRepository.update(updateData))
+        } yield Redirect(routes.CategoryController.list())
+        ot.getOrElse(NotFound(views.html.error.page404()))
       }
     )
   }}
