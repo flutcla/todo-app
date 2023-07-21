@@ -29,3 +29,10 @@ GET     /category/list              controllers.category.CategoryController.list
 # Category 追加ページ
 GET     /category/store             controllers.category.CategoryController.add
 POST    /category/store             controllers.category.CategoryController.store
+
+# Category 削除機能
+POST    /category/delete            controllers.category.CategoryController.delete
+
+# Category 編集機能
+GET    /category/$id<[0-9]+>/edit   controllers.category.CategoryController.edit(id: Long)
+POST   /category/$id<[0-9]+>/update controllers.category.CategoryController.update(id: Long)

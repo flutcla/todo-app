@@ -17,3 +17,11 @@ case class ViewValueCategoryAdd(
   jsSrc:           Seq[String],
   form:            Form[CategoryFormData]
 ) extends ViewValueCommon
+
+case class ViewValueCategoryEdit(
+  title:           String,
+  cssSrc:          Seq[String],
+  jsSrc:           Seq[String],
+  id:              Category.Id,
+  form:            Form[CategoryFormData]
+) extends ViewValueCommon
