@@ -19,7 +19,7 @@
       '_label -> "Slug"
     )
     @helper.input(vv.form("color")){(id, name, value, args) =>
-      <input type="color" name="@name" id="@id" @toHtmlArgs(args)>
+      <input type="color" name="@name" id="@id" value="@value" @toHtmlArgs(args)>
     }
     <input type="submit" value="更新">
   }
