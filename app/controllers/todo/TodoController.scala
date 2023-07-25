@@ -11,6 +11,9 @@ import play.api.i18n.I18nSupport
 import play.api.data.FormError
 import play.api.data.format.{ Formats, Formatter }
 
+import cats.data.OptionT
+import cats.implicits._
+
 import java.time.LocalDateTime
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -65,12 +68,6 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   }}
 
   // 登録用
-  implicit val categoryIdFormatter = new Formatter[Category.Id] {
-    def bind(key: String, data: Map[String, String]): Either[Seq[FormError], Category.Id] =
-      Formats.intFormat.bind(key, data).right.map(Category.Id(_))
-    def unbind(key: String, value: Category.Id): Map[String, String] =
-      Map(key -> value.toString)
-  }
   def store() = Action(parse.json).async { implicit request => {
     request.body
       .validate[JsValueTodoStore]
@@ -116,8 +113,14 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   }
 
   /**
-   * 編集画面
+   * 編集
    */
+  implicit val categoryIdFormatter = new Formatter[Category.Id] {
+    def bind(key: String, data: Map[String, String]): Either[Seq[FormError], Category.Id] =
+      Formats.intFormat.bind(key, data).right.map(Category.Id(_))
+    def unbind(key: String, value: Category.Id): Map[String, String] =
+      Map(key -> value.toString)
+  }
   val editForm = Form(
     mapping(
       "categoryId" -> of[Category.Id],
@@ -154,46 +157,24 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     )
   }}
 
-  def update(id: Long) = Action.async { implicit request: Request[AnyContent] => {
-    editForm.bindFromRequest().fold(
-      (formWithErrors: Form[TodoEditFormData]) => {
-        for {
-          categories <- default.CategoryRepository.getAll()
-        } yield (
-          BadRequest(views.html.todo.edit(
-            ViewValueTodoEdit(
-              title = "Todo 追加",
-              cssSrc = Seq("main.css"),
-              jsSrc = Seq("main.js"),
-              id = Todo.Id(id),
-              form = formWithErrors,
-              categories = categories,
-              status = Todo.Status.values
-            )
-          ))
-        )
-      },
-      (editFormData: TodoEditFormData) => {
-        default.TodoRepository.get(Todo.Id(id)).flatMap(old =>
-          old match {
-            case Some(todo) => for {
-              res <- default.TodoRepository.update(todo.map(_.copy(
-                categoryId = editFormData.categoryId,
-                title      = editFormData.title,
-                body       = editFormData.body,
-                state      = editFormData.state,
-                updatedAt  = java.time.LocalDateTime.now()
-              )))
-            } yield (
-              res match {
-                case Some(_) => Redirect(routes.TodoController.list())
-                case None => NotFound(views.html.error.page404())
-              }
-            )
-            case None => Future.successful{NotFound(views.html.error.page404())}
-          }
-        )
-      }
-    )
+  def update = Action(parse.json).async { implicit request => {
+    request.body
+      .validate[json.reads.JsValueTodo]
+      .fold(
+        errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
+        todoData => {
+          val ot: OptionT[Future, play.api.mvc.Result] = for {
+            old <- OptionT(default.TodoRepository.get(todoData.id))
+            updateData = old.map(_.copy(
+              categoryId = todoData.categoryId,
+              title      = todoData.title,
+              body       = todoData.body,
+              state      = todoData.state
+            ))
+            _ <- OptionT(default.TodoRepository.update(updateData))
+          } yield Redirect(routes.TodoController.list())
+          ot.getOrElse(NotFound(Json.toJson("message" -> "")))
+        }
+      )
   }}
 }

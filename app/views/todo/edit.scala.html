@@ -9,7 +9,7 @@
 )(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
 @common.Default(vv){
-  @helper.form(action = controllers.todo.routes.TodoController.update(vv.id)) {
+  @helper.form(action = controllers.todo.routes.TodoController.update()) {
     @helper.CSRF.formField
     @helper.select(
       vv.form("categoryId"),

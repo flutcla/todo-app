@@ -20,7 +20,7 @@ POST    /todo/delete                controllers.todo.TodoController.delete
 
 # TODO 編集機能
 GET     /todo/$id<[0-9]+>/edit      controllers.todo.TodoController.edit(id: Long)
-POST    /todo/$id<[0-9]+>/update    controllers.todo.TodoController.update(id: Long)
+POST    /todo/update                controllers.todo.TodoController.update
 
 # Category 一覧ページ
 GET     /category/list              controllers.category.CategoryController.list
