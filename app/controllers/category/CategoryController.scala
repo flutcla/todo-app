@@ -99,26 +99,23 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
     )
   }}
 
-  def delete() = Action.async { implicit request: Request[AnyContent] => {
-    request.body.asFormUrlEncoded.get("id").headOption match {
-      case Some(id) =>
-        default.CategoryRepository
-          .remove(Category.Id(id.toLong))
-          .flatMap(res =>
-            res match {
-              case Some(category) => {
-                // カテゴリを削除したらそのカテゴリの todo も全て削除する
-                for {
-                  _ <- default.TodoRepository.removeByCategoryId(category.id)
-                } yield Redirect(routes.CategoryController.list())
-              }
-              case None => Future.successful{NotFound(views.html.error.page404())}
+  def delete() = Action(parse.json).async { implicit request => {
+    request.body
+      .validate[JsValueCategoryDelete]
+      .fold(
+        errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
+        categoryDeleteData => for {
+          res <- default.CategoryRepository.remove(categoryDeleteData.id)
+          _ <- default.TodoRepository.removeByCategoryId(categoryDeleteData.id)
+        } yield (
+          res match {
+            case Some(x) => {
+              Ok(Json.toJson("message" -> s"Successfully deleted ${categoryDeleteData.id.toLong}."))
             }
-          )
-      case None => Future.successful{
-        NotFound(views.html.error.page404())
-      }
-    }
+            case None => NotFound(Json.toJson("message" -> s"ID ${categoryDeleteData.id.toLong} does not exist."))
+          }
+        )
+      )
   }}
 
   def edit(id: Long) = Action.async { implicit request: Request[AnyContent] => {
