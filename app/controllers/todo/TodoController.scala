@@ -157,14 +157,14 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     )
   }}
 
-  def update = Action(parse.json).async { implicit request => {
+  def update(id: Long) = Action(parse.json).async { implicit request => {
     request.body
       .validate[json.reads.JsValueTodo]
       .fold(
         errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
         todoData => {
           val ot: OptionT[Future, play.api.mvc.Result] = for {
-            old <- OptionT(default.TodoRepository.get(todoData.id))
+            old <- OptionT(default.TodoRepository.get(Todo.Id(id)))
             updateData = old.map(_.copy(
               categoryId = todoData.categoryId,
               title      = todoData.title,
