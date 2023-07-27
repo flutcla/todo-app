@@ -38,7 +38,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
   def list() = Action.async {implicit request: Request[AnyContent] => {
     for {
       categories <- default.CategoryRepository.getAll()
-    } yield Ok(Json.toJson(categories.map(JsValueCategory.apply _)))
+    } yield Ok(Json.toJson(categories.map(JsValueCategory.apply)))
   }}
 
   /*
