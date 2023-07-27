@@ -75,28 +75,21 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
     ))))
   }}
 
-  def store() = Action.async { implicit request: Request[AnyContent] => {
-    form.bindFromRequest().fold(
-      (formWithErrors: Form[CategoryFormData]) => {
-        Future.successful(BadRequest(views.html.category.store(ViewValueCategoryAdd(
-          title  = "Category 追加",
-          cssSrc = Seq("main.css"),
-          jsSrc  = Seq("main.js"),
-          form   = formWithErrors
-        ))))
-      },
-      (categoryFormData: CategoryFormData) => {
-        for {
+  def store() = Action(parse.json).async { implicit request => {
+    request.body
+      .validate[JsValueCategoryStore]
+      .fold(
+        errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
+        categoryStoreData => for {
           result <- default.CategoryRepository.add(Category.apply(
-            name  = categoryFormData.name,
-            slug  = categoryFormData.slug,
-            color = categoryFormData.color
+            name  = categoryStoreData.name,
+            slug  = categoryStoreData.slug,
+            color = categoryStoreData.color
           ))
         } yield (
           Redirect(routes.CategoryController.list())
         )
-      }
-    )
+      )
   }}
 
   def delete() = Action(parse.json).async { implicit request => {
