@@ -17,7 +17,7 @@ case class JsValueCategory(
 object JsValueCategory extends JsonEnvReads {
   implicit val categoryIdReads: Reads[Category.Id] = idAsNumberReads
   implicit val colorReads: Reads[Color] = Reads.of[String].map(colorCode =>
-    new Color(Integer.parseInt(colorCode.substring(1, 7), 16), true)
+    new Color(Integer.parseInt(colorCode, 16), true)
   )
   implicit val reads: Reads[JsValueCategory] = Json.reads
 }
