@@ -41,6 +41,17 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
     } yield Ok(Json.toJson(categories.map(json.writes.JsValueCategory.apply _)))
   }}
 
+  def single(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+    for {
+      categoryOpt <- default.CategoryRepository.get(Category.Id(id))
+    } yield (
+      categoryOpt match {
+        case Some(category) => Ok(Json.toJson(json.writes.JsValueCategory(category)))
+        case None => NotFound(Json.toJson("message" -> s"ID ${id} does not exist."))
+      }
+    )
+  }}
+
   /*
    * カテゴリー登録用
   */
