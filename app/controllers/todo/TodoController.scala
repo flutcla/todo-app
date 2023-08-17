@@ -67,6 +67,19 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     }
   }}
 
+  // 1件取得
+  def single(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+    val ot: OptionT[Future, play.api.mvc.Result] = for {
+      todo <- OptionT(default.TodoRepository.get(Todo.Id(id)))
+      category <- OptionT(default.CategoryRepository.get(todo.v.categoryId))
+    } yield (
+      Ok(Json.toJson(JsValueTodoWithCategory((todo, category))))
+    )
+    ot.getOrElse(
+      NotFound(Json.toJson("message" -> s"ID ${id} does not exist."))
+    )
+  }}
+
   // 登録用
   def store() = Action(parse.json).async { implicit request => {
     request.body

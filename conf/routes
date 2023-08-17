@@ -12,6 +12,9 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 # TODO 一覧ページ
 GET     /todo/list                  controllers.todo.TodoController.list
 
+# TODO 個別取得
+GET     /todo/$id<[0-9]+>           controllers.todo.TodoController.single(id: Long)
+
 # TODO 追加ページ
 POST    /todo/store                 controllers.todo.TodoController.store
 
