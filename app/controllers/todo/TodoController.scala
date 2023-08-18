@@ -22,6 +22,10 @@ import lib.model.Todo
 import lib.model.Category
 import lib.persistence.default
 
+import json.writes._
+import json.reads._
+import play.api.libs.json.Json
+
 case class TodoFormData(
   categoryId : Category.Id,
   title :      String,
@@ -52,11 +56,10 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
       if (todoCategoryOptSeq.contains(None)) {
         NotFound(views.html.error.page404())
       } else {
-        Ok(views.html.todo.list(ViewValueTodo(
-          title  = "Todo 一覧",
-          cssSrc = Seq("main.css"),
-          jsSrc = Seq("main.js"),
-          todoCategorySeq = todoCategoryOptSeq.flatten)))
+        val jsValue = todoCategoryOptSeq.flatten.map {
+          case (todo, category) => (JsValueTodoWithCategory((todo, category)))
+        }
+        Ok(Json.toJson(jsValue))
       }
     }
   }}
@@ -68,79 +71,49 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     def unbind(key: String, value: Category.Id): Map[String, String] =
       Map(key -> value.toString)
   }
-  val form: Form[TodoFormData] = Form(
-    mapping(
-      "categoryId" -> of[Category.Id],
-      "title"      -> nonEmptyText(maxLength = 140),
-      "body"       -> nonEmptyText()
-    )(TodoFormData.apply)(TodoFormData.unapply(_))
-  )
-
-  def add() = Action.async { implicit request: Request[AnyContent] => {
-    for {
-      categories <- default.CategoryRepository.getAll()
-    } yield (
-      Ok(views.html.todo.store(ViewValueTodoAdd(
-        title      = "Todo 追加",
-        cssSrc     = Seq("main.css"),
-        jsSrc      = Seq("main.js"),
-        form       = form,
-        categories = categories
-      )))
-    )
-  }}
-
-  def store() = Action.async { implicit request: Request[AnyContent] => {
-    form.bindFromRequest().fold(
-      (formWithErrors: Form[TodoFormData]) => {
-        for {
-          categories <- default.CategoryRepository.getAll()
-        } yield (
-          BadRequest(views.html.todo.store(ViewValueTodoAdd(
-            title      = "Todo 追加",
-            cssSrc     = Seq("main.css"),
-            jsSrc      = Seq("main.js"),
-            form       = form,
-            categories = categories
-          )))
-        )
-      },
-      (todoFormData: TodoFormData) => {
+  def store() = Action(parse.json).async { implicit request => {
+    request.body
+      .validate[JsValueTodoStore]
+      .fold(
+        errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
+        todoStoreData =>
         for {
           result <- default.TodoRepository.add(Todo.apply(
-            categoryId = Category.Id(todoFormData.categoryId),
-            title      = todoFormData.title,
-            body       = todoFormData.body,
+            categoryId = Category.Id(todoStoreData.categoryId),
+            title      = todoStoreData.title,
+            body       = todoStoreData.body,
             state      = Todo.Status.TODO
           ))
         } yield (
           Redirect(routes.TodoController.list())
         )
-      }
-    )
-  }}
+      )
+    }
+  }
 
   /**
   * 対象のデータを削除する
   */
-  def delete() = Action.async { implicit request: Request[AnyContent] => {
-    request.body.asFormUrlEncoded.get("id").headOption match {
-      case Some(id) =>
-        for {
-          res <- default.TodoRepository.remove(Todo.Id(id.toLong))
-        } yield (
-          res match {
-            case Some(x) => {
-              Redirect(routes.TodoController.list())
+  def delete() = Action(parse.json).async { implicit request => {
+    request.body
+      .validate[JsValueTodoDelete]
+      .fold(
+        errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
+        todoDeleteData =>{
+          for {
+            res <- default.TodoRepository.remove(todoDeleteData.id)
+          } yield (
+            res match {
+              case Some(x) => {
+                Ok(Json.toJson("message" -> s"Successfully deleted ${todoDeleteData.id.toLong}."))
+              }
+              case None => NotFound(Json.toJson("message" -> s"ID ${todoDeleteData.id.toLong} does not exist."))
             }
-            case None => NotFound(views.html.error.page404())
-          }
-        )
-      case None => Future{
-        NotFound(views.html.error.page404())
-      }
+          )
+        }
+      )
     }
-  }}
+  }
 
   /**
    * 編集画面
