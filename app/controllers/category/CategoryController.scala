@@ -38,7 +38,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
   def list() = Action.async {implicit request: Request[AnyContent] => {
     for {
       categories <- default.CategoryRepository.getAll()
-    } yield Ok(Json.toJson(categories.map(JsValueCategory.apply)))
+    } yield Ok(Json.toJson(categories.map(json.writes.JsValueCategory.apply _)))
   }}
 
   /*
@@ -134,36 +134,23 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
     )
   }}
 
-  def update(id: Long) = Action.async { implicit request: Request[AnyContent] => {
-    form.bindFromRequest().fold(
-      (formWithErrors: Form[CategoryFormData]) => {
-        for {
-          categories <- default.CategoryRepository.getAll()
-        } yield (
-          BadRequest(views.html.category.edit(
-            ViewValueCategoryEdit(
-              title = "Todo 追加",
-              cssSrc = Seq("main.css"),
-              jsSrc = Seq("main.js"),
-              id = Category.Id(id),
-              form = formWithErrors
-            )
-          ))
-        )
-      },
-      (editFormData: CategoryFormData) => {
-        val ot: OptionT[Future, play.api.mvc.Result] = for {
-          category <- OptionT(default.CategoryRepository.get(Category.Id(id))) // Future[Option[EntityEmbeddedId]]
-          updateData = category.map(_.copy(
-              name       = editFormData.name,
-              slug       = editFormData.slug,
-              color      = editFormData.color,
-              updatedAt  = java.time.LocalDateTime.now()
+  def update(id: Long) = Action(parse.json).async { implicit request => {
+    request.body
+      .validate[json.reads.JsValueCategory]
+      .fold(
+        errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
+        categoryData => {
+          val ot: OptionT[Future, play.api.mvc.Result] = for {
+            old <- OptionT(default.CategoryRepository.get(Category.Id(id)))
+            updateData = old.map(_.copy(
+              name  = categoryData.name,
+              slug  = categoryData.slug,
+              color = categoryData.color
             ))
-          _ <- OptionT(default.CategoryRepository.update(updateData))
-        } yield Redirect(routes.CategoryController.list())
-        ot.getOrElse(NotFound(views.html.error.page404()))
-      }
-    )
+            _ <- OptionT(default.CategoryRepository.update(updateData))
+          } yield Redirect(routes.CategoryController.list())
+          ot.getOrElse(NotFound(Json.toJson("message" -> "")))
+        }
+      )
   }}
 }
