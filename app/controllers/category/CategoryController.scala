@@ -23,6 +23,10 @@ import model.{ViewValueCategoryList, ViewValueCategoryAdd, ViewValueCategoryEdit
 import lib.persistence.default
 import lib.model.Category
 
+import json.writes._
+import json.reads._
+import play.api.libs.json.Json
+
 case class CategoryFormData(
   name:  String,
   slug:  String,
@@ -34,12 +38,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
   def list() = Action.async {implicit request: Request[AnyContent] => {
     for {
       categories <- default.CategoryRepository.getAll()
-    } yield Ok(views.html.category.list(ViewValueCategoryList(
-      title  = "Category 一覧",
-      cssSrc = Seq("main.css"),
-      jsSrc = Seq("main.js"),
-      categories = categories
-    )))
+    } yield Ok(Json.toJson(categories.map(JsValueCategory.apply)))
   }}
 
   /*
