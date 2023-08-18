@@ -12,6 +12,9 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 # TODO 一覧ページ
 GET     /todo/list                  controllers.todo.TodoController.list
 
+# TODO 個別取得
+GET     /todo/$id<[0-9]+>           controllers.todo.TodoController.single(id: Long)
+
 # TODO 追加ページ
 POST    /todo/store                 controllers.todo.TodoController.store
 
@@ -24,6 +27,9 @@ POST    /todo/$id<[0-9]+>/update    controllers.todo.TodoController.update(id: L
 
 # Category 一覧ページ
 GET     /category/list              controllers.category.CategoryController.list
+
+# Category 個別取得
+GET     /category/$id<[0-9]+>       controllers.category.CategoryController.single(id: Long)
 
 # Category 追加ページ
 GET     /category/store             controllers.category.CategoryController.add
