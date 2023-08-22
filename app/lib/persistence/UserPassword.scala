@@ -3,12 +3,12 @@ package lib.persistence
 import scala.concurrent.Future
 import ixias.persistence.SlickRepository
 import slick.jdbc.JdbcProfile
-import lib.model.User
+import lib.model.{ User, UserPassword }
 
-// UserRepository: Userテーブルへのクエリ発行を行う Repository 層の定義
+// UserPasswordRepository: UserPassword テーブルへのクエリ発行を行う Repository 層の定義
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-case class UserRepository[P <: JdbcProfile]()(implicit val driver: P)
-  extends SlickRepository[User.Id, User, P]
+case class UserPasswordRepository[P <: JdbcProfile]()(implicit val driver: P)
+  extends SlickRepository[User.Id, UserPassword, P]
   with db.SlickResourceProvider[P] {
 
   import api._
@@ -17,33 +17,31 @@ case class UserRepository[P <: JdbcProfile]()(implicit val driver: P)
     * Get user data
     */
   def get(id: Id): Future[Option[EntityEmbeddedId]] =
-    RunDBAction(UserTable, "slave") { _
+    RunDBAction(UserPasswordTable, "slave") { _
       .filter(_.id === id)
-      .result.headOption
-    }
-
-  /**
-   * Get user data by email
-   */
-  def getByEmail(email: String): Future[Option[EntityEmbeddedId]] =
-    RunDBAction(UserTable, "slave") { _
-      .filter(_.email === email)
       .result.headOption
     }
 
   /**
     * Add user data
    */
-  def add(entity: EntityWithNoId): Future[Id] =
-    RunDBAction(UserTable) { slick =>
-      slick returning slick.map(_.id) += entity.v
-    }
+  def insert(entity: EntityEmbeddedId): Future[Id] =
+    RunDBAction(UserPasswordTable) { slick => {
+      val row = slick.filter(_.id === entity.id)
+      for {
+        entityOpt <- row.result.headOption
+        _         <- entityOpt match {
+          case None    => slick += entity.v
+          case Some(_) => throw new IllegalArgumentException("UserPasswordRepository: Duplicate entity id")
+        }
+      } yield entity.id
+    } }
 
   /**
    * Update user data
    */
   def update(entity: EntityEmbeddedId): Future[Option[EntityEmbeddedId]] =
-    RunDBAction(UserTable) { slick =>
+    RunDBAction(UserPasswordTable) { slick =>
       val row = slick.filter(_.id === entity.id)
       for {
         old <- row.result.headOption
@@ -58,7 +56,7 @@ case class UserRepository[P <: JdbcProfile]()(implicit val driver: P)
    * Delete user data
    */
   def remove(id: Id): Future[Option[EntityEmbeddedId]] =
-    RunDBAction(UserTable) { slick =>
+    RunDBAction(UserPasswordTable) { slick =>
       val row = slick.filter(_.id === id)
       for {
         old <- row.result.headOption
@@ -68,4 +66,8 @@ case class UserRepository[P <: JdbcProfile]()(implicit val driver: P)
         }
       } yield old
     }
+
+  @deprecated("use insert: EntityEmbeddedId => Future[Id]", "1.0.0")
+  def add(entity: EntityWithNoId): Future[Id] =
+    throw new UnsupportedOperationException("UserPasswordRepository.add")
 }
