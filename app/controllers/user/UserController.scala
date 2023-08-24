@@ -78,4 +78,13 @@ class UserController @Inject()(
       )
     )
   }
+
+  def logout() = Authenticated(authProfile).async { implicit req =>
+    authProfile.loggedIn { user =>
+      authProfile.logoutSucceeded(user.id, {
+        // TODO:
+        Ok(Json.toJson("message" -> (s"Successfully logged out.")))
+      })
+    }
+  }
 }

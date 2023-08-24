@@ -47,3 +47,5 @@ POST   /category/$id<[0-9]+>/update controllers.category.CategoryController.upda
 POST    /user/signup                controllers.user.UserController.signup
 +nocsrf
 POST    /user/login                 controllers.user.UserController.login
++nocsrf
+POST    /user/logout                controllers.user.UserController.logout
