@@ -15,7 +15,7 @@ import cats.implicits._
 import ixias.play.api.auth.mvc.AuthExtensionMethods
 
 import play.api.libs.json.Json
-import json.reads.JsValueUserSignup
+import json.reads.{ JsValueUserSignup, JsValueUserLogin }
 
 
 @Singleton
@@ -50,6 +50,32 @@ class UserController @Inject()(
           })
         } yield result
       }
+    )
+  }
+
+  def login() = Action(parse.json).async { implicit req =>
+    req.body
+        .validate[JsValueUserLogin]
+        .fold (
+      errors => Future.successful(BadRequest(Json.toJson("message" -> "The format is wrong."))),
+      post => OptionT {
+        // ユーザーが存在するか取得
+        UserRepository.getByEmail(post.email)
+      } semiflatMap {
+        // パスワードのチェック
+        case user => for {
+          passwordOpt <- UserPasswordRepository.get(user.id)
+          if passwordOpt.exists(_.v.verify(post.password))
+        } yield user.id
+      } semiflatMap {
+        // トークンを付与
+        case uid => authProfile.loginSucceeded(uid, _ => {
+          // TODO:
+          Ok(Json.toJson("message" -> (s"Logged in as ${uid}:${post.email}")))
+        })
+      } toRight (
+        BadRequest(Json.toJson("message" -> "Login failed."))
+      )
     )
   }
 }

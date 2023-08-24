@@ -43,4 +43,7 @@ GET    /category/$id<[0-9]+>/edit   controllers.category.CategoryController.edit
 POST   /category/$id<[0-9]+>/update controllers.category.CategoryController.update(id: Long)
 
 # User 登録機能
++nocsrf
 POST    /user/signup                controllers.user.UserController.signup
++nocsrf
+POST    /user/login                 controllers.user.UserController.login
