@@ -41,3 +41,6 @@ POST    /category/delete            controllers.category.CategoryController.dele
 # Category 編集機能
 GET    /category/$id<[0-9]+>/edit   controllers.category.CategoryController.edit(id: Long)
 POST   /category/$id<[0-9]+>/update controllers.category.CategoryController.update(id: Long)
+
+# User 登録機能
+POST    /user/signup                controllers.user.UserController.signup
