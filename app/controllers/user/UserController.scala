@@ -16,6 +16,7 @@ import ixias.play.api.auth.mvc.AuthExtensionMethods
 
 import play.api.libs.json.Json
 import json.reads.{ JsValueUserSignup, JsValueUserLogin }
+import json.writes.{ JsValueUser }
 
 
 @Singleton
@@ -44,9 +45,12 @@ class UserController @Inject()(
           uid    <- UserRepository.add(User(None, data.name, data.email).toWithNoId)
           _      <- UserPasswordRepository.insert(UserPassword.build(uid, data.password))
           // 認証トークンを付与
-          result <- authProfile.loginSucceeded(uid, {_ =>
-            // TODO:
-            Ok(Json.toJson("message" -> (s"User ${uid}:${data.name} Created.")))
+          result <- authProfile.loginSucceeded(uid, {token =>
+            Ok(Json.toJson(new JsValueUser(
+              uid,
+              data.name,
+              data.email
+            )))
           })
         } yield result
       }
@@ -66,12 +70,15 @@ class UserController @Inject()(
         case user => for {
           passwordOpt <- UserPasswordRepository.get(user.id)
           if passwordOpt.exists(_.v.verify(post.password))
-        } yield user.id
+        } yield (user.id, user.v.name, user.v.email)
       } semiflatMap {
         // トークンを付与
-        case uid => authProfile.loginSucceeded(uid, _ => {
-          // TODO:
-          Ok(Json.toJson("message" -> (s"Logged in as ${uid}:${post.email}")))
+        case (uid, name, email) => authProfile.loginSucceeded(uid, _ => {
+          Ok(Json.toJson(new JsValueUser(
+              uid,
+              name,
+              email
+            )))
         })
       } toRight (
         BadRequest(Json.toJson("message" -> "Login failed."))
@@ -82,7 +89,6 @@ class UserController @Inject()(
   def logout() = Authenticated(authProfile).async { implicit req =>
     authProfile.loggedIn { user =>
       authProfile.logoutSucceeded(user.id, {
-        // TODO:
         Ok(Json.toJson("message" -> (s"Successfully logged out.")))
       })
     }

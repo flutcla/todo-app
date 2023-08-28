@@ -15,9 +15,7 @@ import cats.data.OptionT
 import cats.implicits._
 
 import java.time.LocalDateTime
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Await}
+import scala.concurrent._
 import scala.concurrent.duration.Duration
 
 import model.{ViewValueTodo, ViewValueTodoAdd, ViewValueTodoEdit}
@@ -28,6 +26,9 @@ import lib.persistence.default
 import json.writes._
 import json.reads._
 import play.api.libs.json.Json
+
+import mvc.auth.UserAuthProfile
+import ixias.play.api.auth.mvc.AuthExtensionMethods
 
 case class TodoFormData(
   categoryId : Category.Id,
@@ -43,8 +44,14 @@ case class TodoEditFormData(
 )
 
 @Singleton
-class TodoController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with I18nSupport {
-  def list() = Action.async { implicit request: Request[AnyContent] => {
+class TodoController @Inject()(
+  val controllerComponents: ControllerComponents,
+  val authProfile:          UserAuthProfile,
+) (implicit ec: ExecutionContext) extends AuthExtensionMethods
+  with BaseController
+  with I18nSupport
+{
+  def list() = Authenticated(authProfile).async { implicit request: Request[AnyContent] => {
     val todoFuture = default.TodoRepository.getAll()
     val categoryFuture = default.CategoryRepository.getAll()
     for {
@@ -68,7 +75,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   }}
 
   // 1件取得
-  def single(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+  def single(id: Long) = Authenticated(authProfile).async { implicit request: Request[AnyContent] => {
     val ot: OptionT[Future, play.api.mvc.Result] = for {
       todo <- OptionT(default.TodoRepository.get(Todo.Id(id)))
       category <- OptionT(default.CategoryRepository.get(todo.v.categoryId))
@@ -81,7 +88,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   }}
 
   // 登録用
-  def store() = Action(parse.json).async { implicit request => {
+  def store() = Authenticated(authProfile)(parse.json).async { implicit request => {
     request.body
       .validate[JsValueTodoStore]
       .fold(
@@ -104,7 +111,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
   /**
   * 対象のデータを削除する
   */
-  def delete() = Action(parse.json).async { implicit request => {
+  def delete() = Authenticated(authProfile)(parse.json).async { implicit request => {
     request.body
       .validate[JsValueTodoDelete]
       .fold(
@@ -143,7 +150,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     )(TodoEditFormData.apply)(TodoEditFormData.unapply(_))
   )
 
-  def edit(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+  def edit(id: Long) = Authenticated(authProfile).async { implicit request: Request[AnyContent] => {
     for {
       res <- default.TodoRepository.get(Todo.Id(id))
       categories <- default.CategoryRepository.getAll()
@@ -170,7 +177,7 @@ class TodoController @Inject()(val controllerComponents: ControllerComponents) e
     )
   }}
 
-  def update(id: Long) = Action(parse.json).async { implicit request => {
+  def update(id: Long) = Authenticated(authProfile)(parse.json).async { implicit request => {
     request.body
       .validate[json.reads.JsValueTodo]
       .fold(

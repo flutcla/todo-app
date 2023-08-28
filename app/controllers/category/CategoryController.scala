@@ -14,8 +14,7 @@ import play.api.data.format.{ Formats, Formatter }
 import cats.data.OptionT
 import cats.implicits._
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
 import scala.util.{Try, Success, Failure}
 import java.awt.Color
 
@@ -27,6 +26,9 @@ import json.writes._
 import json.reads._
 import play.api.libs.json.Json
 
+import mvc.auth.UserAuthProfile
+import ixias.play.api.auth.mvc.AuthExtensionMethods
+
 case class CategoryFormData(
   name:  String,
   slug:  String,
@@ -34,14 +36,20 @@ case class CategoryFormData(
 )
 
 @Singleton
-class CategoryController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with I18nSupport {
-  def list() = Action.async {implicit request: Request[AnyContent] => {
+class CategoryController @Inject()(
+  val controllerComponents: ControllerComponents,
+  val authProfile:          UserAuthProfile,
+) extends AuthExtensionMethods
+  with BaseController
+  with I18nSupport
+{
+  def list() = Authenticated(authProfile).async {implicit request: Request[AnyContent] => {
     for {
       categories <- default.CategoryRepository.getAll()
     } yield Ok(Json.toJson(categories.map(json.writes.JsValueCategory.apply _)))
   }}
 
-  def single(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+  def single(id: Long) = Authenticated(authProfile).async { implicit request: Request[AnyContent] => {
     for {
       categoryOpt <- default.CategoryRepository.get(Category.Id(id))
     } yield (
@@ -77,7 +85,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
     )(CategoryFormData.apply)(CategoryFormData.unapply)
   )
 
-  def add() = Action.async { implicit request: Request[AnyContent] => {
+  def add() = Authenticated(authProfile).async { implicit request: Request[AnyContent] => {
     Future.successful(Ok(views.html.category.store(ViewValueCategoryAdd(
       title  = "Category 追加",
       cssSrc = Seq("main.css"),
@@ -86,7 +94,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
     ))))
   }}
 
-  def store() = Action(parse.json).async { implicit request => {
+  def store() = Authenticated(authProfile)(parse.json).async { implicit request => {
     request.body
       .validate[JsValueCategoryStore]
       .fold(
@@ -103,7 +111,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
       )
   }}
 
-  def delete() = Action(parse.json).async { implicit request => {
+  def delete() = Authenticated(authProfile)(parse.json).async { implicit request => {
     request.body
       .validate[JsValueCategoryDelete]
       .fold(
@@ -122,7 +130,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
       )
   }}
 
-  def edit(id: Long) = Action.async { implicit request: Request[AnyContent] => {
+  def edit(id: Long) = Authenticated(authProfile).async { implicit request: Request[AnyContent] => {
     for {
       res <- default.CategoryRepository.get(Category.Id(id))
     } yield (
@@ -145,7 +153,7 @@ class CategoryController @Inject()(val controllerComponents: ControllerComponent
     )
   }}
 
-  def update(id: Long) = Action(parse.json).async { implicit request => {
+  def update(id: Long) = Authenticated(authProfile)(parse.json).async { implicit request => {
     request.body
       .validate[json.reads.JsValueCategory]
       .fold(
